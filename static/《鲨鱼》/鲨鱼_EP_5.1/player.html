@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>鲨鱼 — 歌词卡 · 5.1 正式 DEMO</title>
+<link rel="stylesheet" href="assets/ep.css"/>
+<link rel="stylesheet" href="assets/motion.css"/>
+<link rel="stylesheet" href="assets/player-extras.css"/>
+<link rel="stylesheet" href="assets/shark-seg.css"/>
+</head>
+<body class="player-page">
+  <nav class="nav" aria-label="主导航">
+    <div class="nav-inner">
+      <a class="nav-brand" href="index.html">PUMBAA</a>
+      <div class="nav-links">
+        <a href="index.html#overview">概览</a>
+        <a href="index.html#v1">章节</a>
+        <a class="nav-buy" href="#play">播放</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="player-shell" id="play">
+    <aside class="lyric-card-stage" aria-label="歌词卡" style="--card-glow: rgba(232,184,109,.4)">
+      <div class="tarot-frame">
+        <div class="card-stack">
+          <img id="cardArtPrev" class="card-prev" src="assets/shark_tarot_card.jpg" alt=""/>
+          <img id="cardArt" class="card-main" src="assets/card_amber.jpg" alt="鲨鱼动态歌词卡"/>
+        </div>
+        <div class="mood-pulse" aria-hidden="true"></div>
+      </div>
+      <div class="mood-rail" id="moodRail" aria-label="情绪色温">
+        <a href="#blk-v1" style="background:#E8B86D" title="黄"></a>
+        <a href="#blk-pre" style="background:#3A7CA5" title="蓝"></a>
+        <a href="#blk-c1" style="background:#C41E3A" title="红"></a>
+        <a href="#blk-v3" style="background:#E8A0B5" title="粉"></a>
+        <a href="#blk-br" style="background:#1a1a1a;border:1px solid #444" title="黑"></a>
+        <a href="#blk-c2" style="background:#2E8B7A" title="绿"></a>
+        <a href="#blk-out" style="background:#D4AF37" title="金"></a>
+      </div>
+    </aside>
+
+    <main class="player-panel">
+      <p class="eyebrow">R&amp;B · 正式 DEMO · 5.1</p>
+      <h1 class="headline">鲨鱼</h1>
+      <p class="meta" id="creditMeta">词 · 彭八 Pumbaa /Luo　·　曲 · 彭八 Pumbaa /Luo</p>
+
+      <div class="transport">
+        <audio id="audio" controls preload="metadata" src="assets/audio/鲨鱼_5.1_Cover_A_t12.mp3">
+          您的浏览器不支持音频播放。
+        </audio>
+        <div class="row">
+          <button type="button" id="btnPlay">播放</button>
+          <button type="button" class="ghost" id="btnPrev">上一句</button>
+          <button type="button" class="ghost" id="btnNext">下一句</button>
+          <button type="button" class="ghost" id="btnAlt" data-src="assets/audio/鲨鱼_5.1_Cover_B_t12.mp3">备选 take</button>
+          <div class="track-switch" id="trackSwitch" aria-label="人声与伴奏">
+            <span class="v-label">音轨</span>
+            <button type="button" class="ghost is-on" data-track="vocal">人声</button>
+            <button type="button" class="ghost" data-track="inst1">伴奏1</button>
+            <button type="button" class="ghost" data-track="inst2">伴奏2</button>
+          </div>
+          <div class="version-switch" aria-label="词曲版本">
+            <span class="v-label">词曲</span>
+            <button type="button" class="ghost is-on" disabled title="其他版本暂不展示">5.1 DEMO</button>
+          </div>
+        </div>
+        <div class="now-playing" id="nowPlaying" aria-live="polite">正在唱 · —</div>
+        <p class="hint" id="audioHint">鲨鱼 5.1 · 正式 DEMO · 逐字已校对 · 可切伴奏1/2</p>
+      </div>
+
+      <div class="sync-lyrics" id="syncLyrics" aria-live="polite"></div>
+    </main>
+  </div>
+
+  <div class="floating-dock shark-seg" aria-label="快捷" data-seg="dock">
+    <span class="shark-seg__thumb" aria-hidden="true"></span>
+    <a class="shark-seg__item" href="index.html">章节</a>
+    <a class="shark-seg__item is-on" href="#play">歌词卡播放</a>
+  </div>
+
+  <footer class="foot">
+    <div class="foot-inner">
+      <span>Copyright © 2026 彭八 Pumbaa. 保留所有权利。</span>
+      <span>《鲨鱼》SHARK EP · 5.1 正式 DEMO</span>
+    </div>
+  </footer>
+  <script src="assets/shark-seg.js"></script>
+  <script src="assets/lyrics-versions.js"></script>
+  <script src="assets/player.js"></script>
+</body>
+</html>

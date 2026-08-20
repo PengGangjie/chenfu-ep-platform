@@ -1,0 +1,21 @@
+{
+  "01_submarine.mp4": {
+    "url": "https://video.qihuiai.com/attachment/seedance/outputs/41563036/202607/2083125041595158528.mp4?auth_key=1785491127-b0ec7b1904e143d1a74431ddcb99053f-0-8f3dcd189ef0f896eadf9577a38cbd16",
+    "bytes": 5922689
+  },
+  "02_shark.mp4": {
+    "url": "https://video.qihuiai.com/attachment/seedance/outputs/41563036/202607/2083125061035757568.mp4?auth_key=1785491127-fd2e87a3dcc8450b812b23ae75ecbba0-0-83dca2004ab9a57323715af13287ec09",
+    "bytes": 4586748
+  },
+  "03_bait.mp4": {
+    "url": "https://video.qihuiai.com/attachment/seedance/outputs/41563036/202607/2083125059982987264.mp4?auth_key=1785491127-6e9e7f082f324ae887781678871b77be-0-264290d4676fb5d7bacf6138a854e075",
+    "bytes": 5286723
+  },
+  "04_volcano.mp4": {
+    "url": "https://video.qihuiai.com/attachment/seedance/outputs/41563036/202607/2083125062335991808.mp4?auth_key=1785491127-33667ea09057482cb65a4069a74c0044-0-79240487e1201ad4c5b69528c62e6660",
+    "bytes": 6542464
+  },
+  "hero_ep.mp4": {
+    "reuse": "01_submarine.mp4"
+  }
+}

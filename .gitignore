@@ -1,0 +1,9 @@
+.env
+secrets/
+__pycache__/
+*.pyc
+.DS_Store
+*.mp4
+*.wav
+.venv/
+venv/

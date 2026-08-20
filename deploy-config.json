@@ -1,0 +1,11 @@
+{
+  "repo_url": "https://github.com/PengGangjie/chenfu-ep-platform",
+  "service_name": "chenfu-ep",
+  "branch": "main",
+  "env_vars": {
+    "APP_MODE": "prod",
+    "LOG_LEVEL": "info",
+    "AUTH_REQUIRED": "true",
+    "PUBLIC_BASE_URL": "https://chenfu-ep.ai-builders.space"
+  }
+}

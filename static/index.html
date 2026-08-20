@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>《沉浮》EP — PUMBAA彭八</title>
+<link rel="stylesheet" href="assets/ep.css"/>
+<link rel="stylesheet" href="assets/motion.css"/>
+<link rel="stylesheet" href="assets/theme-hub.css"/>
+  <link rel="stylesheet" href="/cloud-ui.css"/>
+  <script defer src="/cloud-auth.js"></script>
+</head>
+<body class="hub-page">
+  <nav class="nav" aria-label="主导航">
+    <div class="nav-inner">
+      <a class="nav-brand" href="index.html">PUMBAA</a>
+      <div class="nav-links">
+        <a href="#arc">弧线</a>
+        <a href="#tracks">曲目</a>
+        <a href="《饵》/饵_ep/player.html" data-need-auth="1">播放</a>
+        <a class="nav-buy" href="#t01">进入 EP</a>
+        <a class="nav-login" id="navLogin" href="/sign-in">登录听歌</a>
+        <span class="nav-user" id="navUser" hidden></span>
+        <a class="nav-logout" id="navLogout" href="/sign-out" hidden>退出</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero：品牌主画面，一屏一构图 -->
+  <header class="hub-stage hub-stage--hero" id="top">
+    <div class="hub-media" aria-hidden="true">
+      <img class="hub-bg" src="assets/hub/hero_ep.png" alt="" width="1600" height="900"
+           onerror="this.src='assets/hub/03_bait.jpg'"/>
+      <video class="hub-video" data-src="assets/hub/hero_ep.mp4" muted loop playsinline preload="none"></video>
+      <div class="hub-fx hub-fx--tide" data-fx="tide"></div>
+      <canvas class="hub-canvas" data-canvas="hero" width="1600" height="900"></canvas>
+      <div class="hub-scrim hub-scrim--hero"></div>
+    </div>
+    <div class="hub-stage-copy">
+      <p class="eyebrow">PUMBAA · Independent EP · 2026</p>
+      <h1 class="headline">沉浮</h1>
+      <p class="en">Sink &amp; Float</p>
+      <p class="subhead">双主打《鲨鱼》《潜水艇》——明知危险仍走进去，隔着潜望镜仍想上岸。四首歌，一条从悬着到自燃的水线。</p>
+      <div class="cta-row">
+        <a class="btn-pill" href="#t01">进入《沉浮》</a>
+        <a class="ghost-link" href="#arc">看叙事弧 ›</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- 叙事弧：曲序 饵 → 鲨鱼 → 潜水艇 → 火山群岛；主打 鲨+潜 -->
+  <section class="hub-arc" id="arc">
+    <p class="arc-line" data-reveal>有人抛来温柔的线。</p>
+    <p class="arc-line" data-reveal>明知危险，仍一步步进。</p>
+    <p class="arc-line" data-reveal>隔着潜望镜，仍想靠近。</p>
+    <p class="arc-line" data-reveal>浮上来之后，你选择成为一座还在烧的岛。</p>
+  </section>
+
+  <!-- 曲目浮层导航 -->
+  <nav class="track-rail" id="tracks" aria-label="曲目">
+    <a href="#t01" data-track="01"><span>01</span>饵</a>
+    <a href="#t02" data-track="02"><span>02</span>鲨鱼</a>
+    <a href="#t03" data-track="03"><span>03</span>潜水艇</a>
+    <a href="#t04" data-track="04"><span>04</span>火山群岛</a>
+  </nav>
+
+  <!-- 01 饵 -->
+  <section class="hub-stage hub-stage--track" id="t01" data-theme="mist">
+    <div class="hub-media" aria-hidden="true">
+      <img class="hub-bg" src="assets/hub/03_bait.jpg" alt="" width="1600" height="900"/>
+      <video class="hub-video" data-src="assets/hub/03_bait.mp4" muted loop playsinline preload="none"></video>
+      <div class="hub-fx hub-fx--fog" data-fx="fog"></div>
+      <canvas class="hub-canvas" data-canvas="motes" width="1600" height="900"></canvas>
+      <div class="hub-scrim hub-scrim--mist"></div>
+    </div>
+    <div class="hub-stage-copy hub-stage-copy--track">
+      <p class="num">01 / 04</p>
+      <h2 class="track-title">饵</h2>
+      <p class="en">Bait</p>
+      <p class="pitch">纯粹与占有。戏谑来时，用不回应握住主动权。</p>
+      <div class="cta-row">
+        <a class="btn-pill btn-pill--mist" href="《饵》/饵_ep/player.html" data-need-auth="1">播放</a>
+        <a class="ghost-link" href="《饵》/饵_ep/index.html" data-need-auth="1">章节 ›</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 鲨鱼 -->
+  <section class="hub-stage hub-stage--track" id="t02" data-theme="blood">
+    <div class="hub-media" aria-hidden="true">
+      <img class="hub-bg" src="assets/hub/02_shark.jpg" alt="" width="1600" height="900"/>
+      <video class="hub-video" data-src="assets/hub/02_shark.mp4" muted loop playsinline preload="none"></video>
+      <div class="hub-fx hub-fx--fin" data-fx="fin"></div>
+      <canvas class="hub-canvas" data-canvas="shards" width="1600" height="900"></canvas>
+      <div class="hub-scrim hub-scrim--blood"></div>
+    </div>
+    <div class="hub-stage-copy hub-stage-copy--track">
+      <p class="num">02 / 04</p>
+      <h2 class="track-title">鲨鱼</h2>
+      <p class="en">Shark</p>
+      <p class="pitch">明知鱼鳍即危险，仍一步步进。再浮向晨光。</p>
+      <div class="cta-row">
+        <a class="btn-pill btn-pill--blood" href="《鲨鱼》/鲨鱼_EP_5.1/player.html" data-need-auth="1">播放</a>
+        <a class="ghost-link" href="《鲨鱼》/鲨鱼_EP_5.1/index.html" data-need-auth="1">章节 ›</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 潜水艇 -->
+  <section class="hub-stage hub-stage--track" id="t03" data-theme="deep">
+    <div class="hub-media" aria-hidden="true">
+      <img class="hub-bg" src="assets/hub/01_submarine.jpg" alt="" width="1600" height="900"/>
+      <video class="hub-video" data-src="assets/hub/01_submarine.mp4" muted loop playsinline preload="none"></video>
+      <div class="hub-fx hub-fx--caustic" data-fx="caustic"></div>
+      <canvas class="hub-canvas" data-canvas="bubbles" width="1600" height="900"></canvas>
+      <div class="hub-scrim"></div>
+    </div>
+    <div class="hub-stage-copy hub-stage-copy--track">
+      <p class="num">03 / 04</p>
+      <h2 class="track-title">潜水艇</h2>
+      <p class="en">Submarine</p>
+      <p class="pitch">隔着潜望镜想上岸。岛屿忽远又忽近。</p>
+      <div class="cta-row">
+        <a class="btn-pill btn-pill--cyan" href="《潜水艇》/潜水艇_ep/player.html" data-need-auth="1">播放</a>
+        <a class="ghost-link" href="《潜水艇》/潜水艇_ep/index.html" data-need-auth="1">章节 ›</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 火山群岛 -->
+  <section class="hub-stage hub-stage--track" id="t04" data-theme="ember">
+    <div class="hub-media" aria-hidden="true">
+      <img class="hub-bg" src="assets/hub/04_volcano.jpg" alt="" width="1600" height="900"/>
+      <video class="hub-video" data-src="assets/hub/04_volcano.mp4" muted loop playsinline preload="none"></video>
+      <div class="hub-fx hub-fx--heat" data-fx="heat"></div>
+      <canvas class="hub-canvas" data-canvas="embers" width="1600" height="900"></canvas>
+      <div class="hub-scrim hub-scrim--ember"></div>
+    </div>
+    <div class="hub-stage-copy hub-stage-copy--track">
+      <p class="num">04 / 04</p>
+      <h2 class="track-title">火山群岛</h2>
+      <p class="en">Volcanic Archipelago</p>
+      <p class="pitch">反传统叙事的人。听不懂就算了——正好。</p>
+      <div class="cta-row">
+        <a class="btn-pill btn-pill--ember" href="《火山群岛》/火山群岛_ep/player.html" data-need-auth="1">播放</a>
+        <a class="ghost-link" href="《火山群岛》/火山群岛_ep/index.html" data-need-auth="1">章节 ›</a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="hub-foot">
+    <p class="eyebrow">制作</p>
+    <p>词 · PUMBAA彭八　·　《沉浮》EP　·　Copyright © 2026</p>
+    <p class="hub-foot-note">主打《鲨鱼》《潜水艇》　·　水线：饵 → 鳍 → 潜 → 火。</p>
+  </footer>
+
+  <script src="assets/hub.js"></script>
+</body>
+</html>

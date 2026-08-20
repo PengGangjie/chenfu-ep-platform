@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>潜水艇 — 歌词卡 · 播放</title>
+<link rel="stylesheet" href="assets/ep.css"/>
+<link rel="stylesheet" href="assets/motion.css"/>
+<link rel="stylesheet" href="assets/player-extras.css"/>
+<link rel="stylesheet" href="assets/shark-seg.css"/>
+<link rel="stylesheet" href="assets/theme-sub.css"/>
+</head>
+<body class="player-page">
+  <nav class="nav" aria-label="主导航">
+    <div class="nav-inner">
+      <a class="nav-brand" href="index.html">PUMBAA</a>
+      <div class="nav-links">
+        <a href="index.html#overview">概览</a>
+        <a href="index.html#v1">章节</a>
+        <a class="nav-buy" href="#play">播放</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="player-shell" id="play">
+    <aside class="lyric-card-stage" aria-label="歌词卡" style="--card-glow: rgba(45,120,150,.4)">
+      <div class="tarot-frame">
+        <div class="card-stack">
+          <img id="cardArtPrev" class="card-prev" src="assets/card_deep.jpg" alt=""/>
+          <img id="cardArt" class="card-main" src="assets/card_deep.jpg" alt="潜水艇动态歌词卡"/>
+        </div>
+        <div class="water-glass" aria-hidden="true"></div>
+        <div class="bubbles" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <div class="mood-pulse" aria-hidden="true"></div>
+      </div>
+      <div class="mood-rail" id="moodRail" aria-label="段落色温">
+        <a href="#blk-v1" style="background:#2D7896" title="潜"></a>
+        <a href="#blk-pre1" style="background:#A0D2DC" title="沫"></a>
+        <a href="#blk-c1" style="background:#D4AF69" title="岛"></a>
+        <a href="#blk-v2" style="background:#1E5070" title="渊"></a>
+        <a href="#blk-pre2" style="background:#8CC8D2" title="疑"></a>
+        <a href="#blk-c2" style="background:#5EC8D8" title="讯"></a>
+        <a href="#blk-br" style="background:#1a1a1a" title="噪"></a>
+        <a href="#blk-c3" style="background:#46A096" title="回"></a>
+        <a href="#blk-out" style="background:#B4BEC8" title="岸"></a>
+      </div>
+    </aside>
+
+    <main class="player-panel">
+      <p class="eyebrow">Dream Pop · 独立 EP</p>
+      <h1 class="headline">潜水艇</h1>
+      <p class="meta" id="creditMeta">词 · PUMBAA彭八　·　曲 · Alan　·　Dream Pop × 后朋贝斯</p>
+
+      <div class="transport">
+        <audio id="audio" controls preload="metadata" src="assets/audio/潜水艇3.0_A.mp3">
+          您的浏览器不支持音频播放。
+        </audio>
+        <div class="row">
+          <button type="button" id="btnPlay">播放</button>
+          <button type="button" class="ghost" id="btnPrev">上一句</button>
+          <button type="button" class="ghost" id="btnNext">下一句</button>
+          <button type="button" class="ghost" id="btnAlt" data-src="assets/audio/潜水艇3.0_B.mp3">备选 take</button>
+          <div class="version-switch" id="versionSwitch" aria-label="版本">
+            <span class="v-label">版本</span>
+            <button type="button" class="ghost" data-ver="2.0">2.0</button>
+            <button type="button" class="ghost is-on" data-ver="3.0">3.0</button>
+            <button type="button" class="ghost" data-ver="demo">Demo</button>
+          </div>
+        </div>
+        <p class="hint" id="audioHint">潜水艇 3.0 · 商业摇滚 · 逐句已校对 · A/B</p>
+        <div class="now-playing" id="nowPlaying" aria-live="polite">段落 · —</div>
+      </div>
+
+      <div class="sync-lyrics" id="syncLyrics" aria-live="polite">
+        <article class="sync-block is-on" id="blk-v1" data-start="10.0" data-end="48.0" data-art="assets/card_deep.jpg" data-glow="rgba(45,120,150,.45)">
+          <div class="k">Verse 1 · 潜望镜 · ~0:10</div>
+          <div class="sync-progress" aria-hidden="true"><span></span></div>
+          <pre>潜在水底的我有点笨拙
+只有鱼群 它陪着我
+潜望镜外世界精彩好多
+却难看破
+岸上的人其实最难琢磨
+人鱼的传说 是否 真的存在过</pre>
+        </article>
+        <article class="sync-block" id="blk-pre1" data-start="48.0" data-end="56.0" data-art="assets/card_foam.jpg" data-glow="rgba(160,210,220,.4)">
+          <div class="k">Pre-Chorus · 泡沫</div>
+          <div class="sync-progress" aria-hidden="true"><span></span></div>
+          <pre>我疑惑
+成为搁浅的
+泡沫</pre>
+        </article>
+        <article class="sync-block" id="blk-c1" data-start="56.0" data-end="88.0" data-art="assets/card_island.jpg" data-glow="rgba(212,175,105,.45)">
+          <div class="k">Chorus · 岛屿</div>
+          <div class="sync-progress" aria-hidden="true"><span></span></div>
+          <pre>你是我心里
+忽远又忽近
+岛屿
+海水在抚摸
+沙滩在诱惑
+我
+海流的缝隙
+若即又若离
+你讯息
+海鸥也嘲笑
+我</pre>
+        </article>
+        <article class="sync-block" id="blk-v2" data-start="88.0" data-end="118.0" data-art="assets/card_abyss.jpg" data-glow="rgba(30,80,110,.45)">
+          <div class="k">Verse 2 · 再潜</div>
+          <div class="sync-progress" aria-hidden="true"><span></span></div>
+          <pre>潜在水底的我有点笨拙
+只有鱼群 它陪着我
+潜望镜外世界精彩好多
+却难看破
+岸上的人其实最难琢磨
+人鱼的传说 是否 真的存在过</pre>
+        </article>
+        <article class="sync-block" id="blk-pre2" data-start="118.0" data-end="126.0" data-art="assets/card_foam2.jpg" data-glow="rgba(140,200,210,.4)">
+          <div class="k">Pre-Chorus · 泡沫</div>
+          <div class="sync-progress" aria-hidden="true"><span></span></div>
+          <pre>我疑惑
+成为搁浅的
+泡沫</pre>
+        </article>
+        <article class="sync-block" id="blk-c2" data-start="126.0" data-end="156.0" data-art="assets/card_signal.jpg" data-glow="rgba(94,200,216,.45)">
+          <div class="k">Chorus · 讯息</div>
+          <div class="sync-progress" aria-hidden="true"><span></span></div>
+          <pre>你是我心里
+忽远又忽近
+岛屿
+海水在抚摸
+沙滩在诱惑
+我
+海流的缝隙
+若即又若离
+你讯息</pre>
+        </article>
+        <article class="sync-block" id="blk-br" data-start="156.0" data-end="182.0" data-art="assets/card_noise.jpg" data-glow="rgba(180,80,120,.35)">
+          <div class="k">Bridge · 淹没</div>
+          <div class="sync-progress" aria-hidden="true"><span></span></div>
+          <pre>吹过了寂寞
+噪音变太多
+淹没</pre>
+        </article>
+        <article class="sync-block" id="blk-c3" data-start="182.0" data-end="212.0" data-art="assets/card_return.jpg" data-glow="rgba(70,160,150,.45)">
+          <div class="k">Chorus · 回满</div>
+          <div class="sync-progress" aria-hidden="true"><span></span></div>
+          <pre>你是我心里
+忽远又忽近
+岛屿
+海水在抚摸
+沙滩在诱惑
+我</pre>
+        </article>
+        <article class="sync-block" id="blk-out" data-start="212.0" data-end="234.0" data-art="assets/card_shore.jpg" data-glow="rgba(180,190,200,.4)">
+          <div class="k">Outro · 风浪</div>
+          <div class="sync-progress" aria-hidden="true"><span></span></div>
+          <pre>风浪要来临
+糟糕又糟心
+想靠近
+我该要怎么
+做</pre>
+        </article>
+      </div>
+    </main>
+  </div>
+
+  <div class="floating-dock shark-seg" aria-label="快捷" data-seg="dock">
+    <span class="shark-seg__thumb" aria-hidden="true"></span>
+    <a class="shark-seg__item" href="index.html">章节</a>
+    <a class="shark-seg__item is-on" href="#play">歌词卡播放</a>
+  </div>
+
+  <footer class="foot">
+    <div class="foot-inner">
+      <span>Copyright © 2026 PUMBAA彭八 / Alan. 保留所有权利。</span>
+      <span>《潜水艇》SUBMARINE EP</span>
+    </div>
+  </footer>
+  <script src="assets/shark-seg.js"></script>
+  <script src="assets/lyrics-versions.js"></script>
+  <script src="assets/player.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+/* 《沉浮》EP 云端登录条 */
+.nav-login,.nav-logout{
+  color:#fff;opacity:.9;text-decoration:none;font-size:.85rem;margin-left:.75rem;
+}
+.nav-login{border:1px solid rgba(255,255,255,.45);padding:.35rem .8rem;border-radius:999px}
+.nav-user{margin-left:.75rem;font-size:.8rem;opacity:.75}
+.hub-auth-banner{
+  position:fixed;left:50%;bottom:1.25rem;transform:translateX(-50%);
+  z-index:40;background:rgba(10,14,18,.88);color:#f5f7fa;
+  padding:.7rem 1.1rem;border-radius:999px;font-size:.9rem;
+  display:none;gap:.75rem;align-items:center;backdrop-filter:blur(8px);
+}
+.hub-auth-banner.is-on{display:flex}
+.hub-auth-banner a{color:#9fe8ff}

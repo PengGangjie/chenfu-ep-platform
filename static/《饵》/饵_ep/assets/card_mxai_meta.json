@@ -1,0 +1,41 @@
+{
+  "model": "即梦5.0标准版",
+  "aspect": "2:3",
+  "cards": [
+    {
+      "file": "card_v1.jpg",
+      "serial_no": "2083050775340126208",
+      "url": "https://cdn.qihuiai.com/attachment/seedream/outputs/41563036/202607/20830507753401262081243291.png?auth_key=1785473380-d80e5c9046ff48bba95b850fcf8127a0-0-359387fa4177c925a17fd5acb4125753"
+    },
+    {
+      "file": "card_v1b.jpg",
+      "serial_no": "2083050770688643072",
+      "url": "https://cdn.qihuiai.com/attachment/seedream/outputs/41563036/202607/20830507706886430721243331.png?auth_key=1785473384-e17545d6ec5b4e2387879c1f4bd29e1a-0-f024d87eda616fac61077eafa02c0e37"
+    },
+    {
+      "file": "card_c1.jpg",
+      "serial_no": "2083050771695276032",
+      "url": "https://cdn.qihuiai.com/attachment/seedream/outputs/41563036/202607/20830507716952760321243311.png?auth_key=1785473391-b9b349c2cfcf4b00aa9063b25debdb90-0-cfe12c905332ce4237a0a313851730a7"
+    },
+    {
+      "file": "card_v2.jpg",
+      "serial_no": "2083050773100367872",
+      "url": "https://cdn.qihuiai.com/attachment/seedream/outputs/41563036/202607/20830507731003678721243321.png?auth_key=1785473391-f55c9f2ba5f444c49a4131842225ac8b-0-884bc3e49103284c2aa09200d9a30dfc"
+    },
+    {
+      "file": "card_c2.jpg",
+      "serial_no": "2083050774371241984",
+      "url": "https://cdn.qihuiai.com/attachment/seedream/outputs/41563036/202607/20830507743712419841243311.png?auth_key=1785473391-4a4f8d98b7d441dfbcec479aacf3b01c-0-5e6c28c22d792b10a4e96f0b2531e014"
+    },
+    {
+      "file": "card_br.jpg",
+      "serial_no": "2083050776640360448",
+      "url": "https://cdn.qihuiai.com/attachment/seedream/outputs/41563036/202607/20830507766403604481243341.png?auth_key=1785473391-ce4ca318c6ec41d0a4e082f7d65aa485-0-a622f78a15d100547f71f36af5eced8e"
+    },
+    {
+      "file": "card_out.jpg",
+      "serial_no": "2083050777571495936",
+      "url": "https://cdn.qihuiai.com/attachment/seedream/outputs/41563036/202607/20830507775714959361243261.png?auth_key=1785473391-260b130e19874a4f83e9cbc118ec1170-0-d2f25cadc3bcf7f1c6b0232aa6fecca7"
+    }
+  ]
+}

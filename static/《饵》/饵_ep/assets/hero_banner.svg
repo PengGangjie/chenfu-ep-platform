@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1080" viewBox="0 0 720 1080">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1a242c"/>
+      <stop offset="100%" stop-color="#5a7a88"/>
+    </linearGradient>
+  </defs>
+  <rect width="720" height="1080" fill="url(#g)"/>
+  <circle cx="560" cy="220" r="180" fill="#5a7a88" fill-opacity=".18"/>
+  <circle cx="140" cy="860" r="220" fill="#5a7a88" fill-opacity=".12"/>
+  <text x="64" y="920" fill="#f5f5f7" font-family="Microsoft YaHei, PingFang SC, sans-serif" font-size="54" font-weight="600">饵</text>
+  <text x="64" y="980" fill="#f5f5f7" fill-opacity=".7" font-family="Microsoft YaHei, PingFang SC, sans-serif" font-size="22">Bait</text>
+</svg>

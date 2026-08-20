@@ -1,0 +1,38 @@
+
+:root {
+  --accent: #5a7a88;
+  --accent-hover: #3d5a66;
+  --link: #5a7a88;
+  --link-dark: #9ec0cc;
+  --fin-icon: none;
+}
+.nav-buy::before { display: none !important; width: 0 !important; }
+.btn-pill::before { display: none !important; }
+.hero--song .hero-media img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.85); }
+.hero-scrim {
+  background: linear-gradient(180deg, rgba(20,28,34,.25) 0%, rgba(20,28,34,.55) 45%, rgba(20,28,34,.88) 100%);
+}
+body.player-page { background: #11161a; }
+.sync-line {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  padding: 0.22em 0.35em;
+  margin: 0.1em 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color .15s ease, background .15s ease;
+}
+.sync-line:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.sync-line.is-on { color: var(--accent); }
+.sync-line.is-locked {
+  color: var(--accent);
+  background: rgba(120, 160, 180, 0.18);
+  box-shadow: inset 3px 0 0 var(--accent);
+}

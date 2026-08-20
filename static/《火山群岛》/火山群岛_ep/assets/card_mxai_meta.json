@@ -1,0 +1,56 @@
+{
+  "model": "即梦5.0标准版",
+  "aspect": "2:3",
+  "cards": [
+    {
+      "file": "card_in.jpg",
+      "serial_no": "2083050791811158016",
+      "url": "https://cdn.qihuiai.com/attachment/seedream/outputs/41563036/202607/20830507918111580161243341.png?auth_key=1785473392-db6771c098904e3993c08e345ebdc1fb-0-455fc225dab22512ff6bb47482394091"
+    },
+    {
+      "file": "card_v0.jpg",
+      "serial_no": "2083050794004779008",
+      "url": "https://cdn.qihuiai.com/attachment/seedream/outputs/41563036/202607/20830507940047790081243331.png?auth_key=1785473393-01f1883407044ff9ae554a85b3292524-0-e8ff54bfa97534dfc3f8c8a5e764d11d"
+    },
+    {
+      "file": "card_pre1.jpg",
+      "serial_no": "2083051210759213056",
+      "url": "https://cdn.qihuiai.com/attachment/seedream/outputs/41563036/202607/20830512107592130561245241.png?auth_key=1785473484-777bd2472af84333b515028f36836cd4-0-9e46fb5248a6af78ac70fc73a9c92721"
+    },
+    {
+      "file": "card_v1.jpg",
+      "serial_no": "2083051325792194560",
+      "url": "https://cdn.qihuiai.com/attachment/seedream/outputs/41563036/202607/20830513257921945601245381.png?auth_key=1785473484-aa6cc44a06744eb19818fcc3b9b9263b-0-b9d9c607589f6dff8ef63e4efb543ffc"
+    },
+    {
+      "file": "card_c1.jpg",
+      "serial_no": "2083051327214063616",
+      "url": "https://cdn.qihuiai.com/attachment/seedream/outputs/41563036/202607/20830513272140636161245441.png?auth_key=1785473485-796dc3eee5a6420d83b173fe2e83afc3-0-d61db24519dc4cd237e47e999db56da6"
+    },
+    {
+      "file": "card_v2.jpg",
+      "serial_no": "2083051329592233984",
+      "url": "https://cdn.qihuiai.com/attachment/seedream/outputs/41563036/202607/20830513295922339841245441.png?auth_key=1785473485-4c1cf662c1d7476c8168403d2702049c-0-fc891ba4e3e982a56c6d92efe69e413a"
+    },
+    {
+      "file": "card_pre2.jpg",
+      "serial_no": "2083051331093794816",
+      "url": "https://cdn.qihuiai.com/attachment/seedream/outputs/41563036/202607/20830513310937948161245521.png?auth_key=1785473485-9826958bf4d342a2bc7f4a0a9bb5bea1-0-72a03ab2d35df23c0a38b155d1090608"
+    },
+    {
+      "file": "card_c2.jpg",
+      "serial_no": "2083051333455187968",
+      "url": "https://cdn.qihuiai.com/attachment/seedream/outputs/41563036/202607/20830513334551879681245511.png?auth_key=1785473485-de4d511276cd4877af5c0d45772f8bfb-0-552a3201ca3c277a60ef7385de8debfe"
+    },
+    {
+      "file": "card_br.jpg",
+      "serial_no": "2083051334923194368",
+      "url": "https://cdn.qihuiai.com/attachment/seedream/outputs/41563036/202607/20830513349231943681245461.png?auth_key=1785473485-fcba7f986aff408796c2e93379b35681-0-e4f7add90f4cb598dcac83f5c5817d84"
+    },
+    {
+      "file": "card_out.jpg",
+      "serial_no": "2083051337242644480",
+      "url": "https://cdn.qihuiai.com/attachment/seedream/outputs/41563036/202607/20830513372426444801245501.png?auth_key=1785473486-8feb3874e9b848d2b06bdb5397f48677-0-6879fea0d2932fe9be985714fe585d03"
+    }
+  ]
+}

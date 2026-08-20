@@ -1,0 +1,51 @@
+{
+  "model": "即梦5.0标准版",
+  "aspect": "2:3",
+  "cards": [
+    {
+      "file": "card_deep.jpg",
+      "serial_no": "2082819176430309376",
+      "url": "https://cdn.qihuiai.com/attachment/seedream/outputs/41563036/202607/20828191764303093762123091.png"
+    },
+    {
+      "file": "card_foam.jpg",
+      "serial_no": "2082819180817551360",
+      "url": "https://cdn.qihuiai.com/attachment/seedream/outputs/41563036/202607/20828191808175513602123151.png"
+    },
+    {
+      "file": "card_island.jpg",
+      "serial_no": "2082819184491761664",
+      "url": "https://cdn.qihuiai.com/attachment/seedream/outputs/41563036/202607/20828191844917616642123161.png"
+    },
+    {
+      "file": "card_abyss.jpg",
+      "serial_no": "2082819188161777664",
+      "url": "https://cdn.qihuiai.com/attachment/seedream/outputs/41563036/202607/20828191881617776642123131.png"
+    },
+    {
+      "file": "card_signal.jpg",
+      "serial_no": "2082819192158949376",
+      "url": "https://cdn.qihuiai.com/attachment/seedream/outputs/41563036/202607/20828191921589493762123151.png"
+    },
+    {
+      "file": "card_noise.jpg",
+      "serial_no": "2082819196458110977",
+      "url": "https://cdn.qihuiai.com/attachment/seedream/outputs/41563036/202607/20828191964581109772123161.png"
+    },
+    {
+      "file": "card_return.jpg",
+      "serial_no": "2082819201260589056",
+      "url": "https://cdn.qihuiai.com/attachment/seedream/outputs/41563036/202607/20828192012605890562123181.png"
+    },
+    {
+      "file": "card_shore.jpg",
+      "serial_no": "2082819205677191168",
+      "url": "https://cdn.qihuiai.com/attachment/seedream/outputs/41563036/202607/20828192056771911682123201.png"
+    },
+    {
+      "file": "card_foam2.jpg",
+      "serial_no": "2082819206977425408",
+      "url": "https://cdn.qihuiai.com/attachment/seedream/outputs/41563036/202607/20828192069774254082123201.png"
+    }
+  ]
+}

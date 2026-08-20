@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>饵 — 歌词卡 · 播放</title>
+<link rel="stylesheet" href="assets/ep.css"/>
+<link rel="stylesheet" href="assets/motion.css"/>
+<link rel="stylesheet" href="assets/player-extras.css"/>
+<link rel="stylesheet" href="assets/shark-seg.css"/>
+<link rel="stylesheet" href="assets/theme-song.css"/>
+</head>
+<body class="player-page">
+  <nav class="nav" aria-label="主导航">
+    <div class="nav-inner">
+      <a class="nav-brand" href="../../index.html">PUMBAA</a>
+      <div class="nav-links">
+        <a href="index.html#overview">概览</a>
+        <a href="index.html#blk-v1">章节</a>
+        <a class="nav-buy" href="#play">播放</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="player-shell" id="play">
+    <aside class="lyric-card-stage" aria-label="歌词卡" style="--card-glow: rgba(120,140,150,.4)">
+      <div class="tarot-frame">
+        <div class="card-stack">
+          <img id="cardArtPrev" class="card-prev" src="assets/card_v1.jpg" alt=""/>
+          <img id="cardArt" class="card-main" src="assets/card_v1.jpg" alt="饵歌词卡"/>
+        </div>
+        <div class="mood-pulse" aria-hidden="true"></div>
+      </div>
+      <div class="mood-rail" id="moodRail" aria-label="段落"><a href="#blk-v1" style="background:#5a7a88" title="巾"></a><a href="#blk-c1" style="background:#5a7a88" title="饵"></a><a href="#blk-v2" style="background:#5a7a88" title="卡"></a><a href="#blk-c2" style="background:#5a7a88" title="远"></a><a href="#blk-br" style="background:#5a7a88" title="悬"></a><a href="#blk-out" style="background:#5a7a88" title="岸"></a></div>
+    </aside>
+
+    <main class="player-panel">
+      <p class="eyebrow">抒情芭乐 · 独立 EP</p>
+      <h1 class="headline">饵</h1>
+      <p class="meta" id="creditMeta">词 · PUMBAA彭八　·　曲 · Suno　·　V3.2 悬日吉他</p>
+      <div class="transport">
+        <audio id="audio" controls preload="metadata" src="assets/audio/饵_v34_A.mp3"></audio>
+        <div class="row">
+          <button type="button" id="btnPlay">播放</button>
+          <button type="button" class="ghost" id="btnPrev">上一句</button>
+          <button type="button" class="ghost" id="btnNext">下一句</button>
+          <button type="button" class="ghost" id="btnAlt" data-src="assets/audio/饵_v34_B.mp3">备选 B</button>
+          <div class="version-switch" id="versionSwitch" aria-label="版本"><button type="button" class="ghost is-on" data-ver="v34">V3.2</button><button type="button" class="ghost" data-ver="v3studio">V3.1</button><button type="button" class="ghost" data-ver="v3fresh">v3fresh</button><button type="button" class="ghost" data-ver="v2fresh">v2fresh</button></div>
+        </div>
+        <p class="hint" id="audioHint">试听 · 段落时间轴为估算，可点歌词跳转</p>
+        <div class="now-playing" id="nowPlaying" aria-live="polite">段落 · —</div>
+      </div>
+      <div class="sync-lyrics" id="syncLyrics" aria-live="polite"></div>
+    </main>
+  </div>
+
+  <div class="floating-dock shark-seg" aria-label="快捷" data-seg="dock">
+    <span class="shark-seg__thumb" aria-hidden="true"></span>
+    <a class="shark-seg__item" href="index.html">章节</a>
+    <a class="shark-seg__item is-on" href="#play">播放</a>
+    <a class="shark-seg__item" href="../../index.html">EP</a>
+  </div>
+
+  <script src="assets/lyrics-versions.js"></script>
+  <script src="assets/shark-seg.js"></script>
+  <script src="assets/player.js"></script>
+</body>
+</html>
