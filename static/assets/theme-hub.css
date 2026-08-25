@@ -333,6 +333,9 @@ body.hub-page .hub-stage-copy .en {
   .hub-stage-copy .headline { font-size: 56px; }
   .hub-stage-copy .track-title { font-size: 42px; }
   .arc-line { font-size: 26px; }
+  .hub-stage-copy { padding: 0 18px 32px; }
+  .cta-row { flex-wrap: wrap; gap: 14px; }
+  .btn-pill { white-space: nowrap; }
 }
 
 @media (prefers-reduced-motion: reduce) {
