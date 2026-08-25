@@ -35,6 +35,24 @@ PROTECTED_PREFIXES = (
     "/《火山群岛》",
 )
 AUDIO_SUFFIXES = (".mp3", ".m4a", ".wav", ".flac", ".ogg")
+# 样式/脚本/封面图必须公开，否则登录后 <link rel=stylesheet> 仍会 307 到 HTML，页面会变成无样式
+PUBLIC_STATIC_SUFFIXES = (
+    ".css",
+    ".js",
+    ".map",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".webp",
+    ".gif",
+    ".svg",
+    ".ico",
+    ".woff",
+    ".woff2",
+    ".ttf",
+    ".json",
+    ".webmanifest",
+)
 
 settings = get_settings()
 app = FastAPI(title="《沉浮》EP")
@@ -89,8 +107,8 @@ def is_public_path(path: str) -> bool:
         return True
     if any(path.startswith(p) for p in PUBLIC_PREFIXES):
         return True
-    # Hub 根级样式/脚本（偶发无前缀）
-    if path.endswith((".css", ".js", ".map", ".ico", ".svg", ".webmanifest")) and "/" not in path.lstrip("/"):
+    lower = path.lower()
+    if any(lower.endswith(s) for s in PUBLIC_STATIC_SUFFIXES):
         return True
     return False
 
