@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>留言仓 — 《沉浮》EP</title>
+<link rel="stylesheet" href="/cloud-ui.css"/>
+<script defer src="/cloud-auth.js"></script>
+<script defer src="/cloud-board.js"></script>
+  <link rel="icon" href="/brand/app-logo-mark.svg" type="image/svg+xml"/>
+  <link rel="apple-touch-icon" href="/icons/icon-192.png"/>
+</head>
+<body class="board-page">
+  <nav class="nav" aria-label="主导航">
+    <div class="nav-inner" style="max-width:1120px;margin:0 auto;height:48px;padding:0 22px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#f5f7fa">
+      <a class="nav-brand" href="/" style="color:#fff;text-decoration:none;font-weight:600;letter-spacing:.08em">PUMBAA</a>
+      <div class="nav-links" style="display:flex;gap:18px;align-items:center">
+        <a href="/" style="color:#f5f7fa;opacity:.8;text-decoration:none">《沉浮》</a>
+        <a href="/board.html" style="color:#fff;text-decoration:none">留言仓</a>
+        <a class="nav-login" id="navLogin" href="/sign-in">登录</a>
+        <span class="nav-user" id="navUser" hidden></span>
+        <a class="nav-logout" id="navLogout" href="/sign-out" hidden>退出</a>
+      </div>
+    </div>
+  </nav>
+  <div class="board-shell" id="boardApp">
+    <p class="board-empty">正在打开导航仓…</p>
+  </div>
+</body>
+</html>

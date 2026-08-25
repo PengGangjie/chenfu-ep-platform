@@ -1,4 +1,4 @@
-/* 《沉浮》EP 云端登录条 */
+/* 《沉浮》EP 云端：登录条 + 留言仓 + 歌词爱心 */
 .nav-login,.nav-logout{
   color:#fff;opacity:.9;text-decoration:none;font-size:.85rem;margin-left:.75rem;
   white-space:nowrap;flex-shrink:0;
@@ -14,6 +14,154 @@
 }
 .hub-auth-banner.is-on{display:flex}
 .hub-auth-banner a{color:#9fe8ff}
+
+/* 曲目点赞条 */
+.cloud-song-bar{
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;
+  margin:10px 0 4px;font-size:14px;
+}
+.cloud-like{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 14px;border-radius:999px;cursor:pointer;
+  border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.06);
+  color:#fff;font:inherit;font-size:13px;letter-spacing:.04em;
+}
+.cloud-like:hover{background:rgba(255,255,255,.12)}
+.cloud-like.is-on{border-color:#ff6b8a;background:rgba(255,77,109,.22);color:#ffd0d8}
+.cloud-like .heart{font-size:15px;line-height:1}
+.cloud-song-meta{opacity:.62;font-size:12px}
+.cloud-song-bar a{color:#9fe8ff;text-decoration:none;font-size:13px}
+.cloud-song-bar a:hover{text-decoration:underline}
+
+/* 歌词行爱心：包在 lyric-line 外侧，避免 button 套 button */
+.lyric-row{
+  display:flex;align-items:flex-start;gap:2px;width:100%;
+}
+.lyric-row .lyric-line{flex:1;min-width:0}
+.lyric-heart{
+  flex-shrink:0;width:40px;min-height:36px;margin-top:4px;
+  border:0;border-radius:10px;background:transparent;cursor:pointer;
+  color:rgba(255,255,255,.32);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:0;padding:2px 0;
+  font:inherit;line-height:1.1;
+}
+.lyric-heart:hover{color:#ff8aa0;background:rgba(255,77,109,.12)}
+.lyric-heart.is-on{color:#ff4d6d}
+.lyric-heart .glyph{font-size:15px}
+.lyric-heart .n{font-size:10px;opacity:.8;font-variant-numeric:tabular-nums}
+.lyric-heart.is-on .n{opacity:1}
+
+.cloud-player-note{
+  margin:18px 0 8px;padding:14px 16px;border-radius:14px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+}
+.cloud-player-note label{display:block;font-size:12px;opacity:.7;margin-bottom:6px}
+.cloud-player-note textarea{
+  width:100%;min-height:72px;resize:vertical;border-radius:10px;
+  border:1px solid rgba(255,255,255,.16);background:rgba(0,0,0,.28);
+  color:#fff;padding:10px 12px;font:inherit;font-size:14px;
+}
+.cloud-player-note .row{
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px;
+}
+.cloud-player-note select,.cloud-player-note button{
+  font:inherit;font-size:13px;border-radius:999px;padding:6px 12px;
+  border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.08);color:#fff;
+}
+.cloud-player-note button.primary{background:#c41e3a;border-color:#c41e3a;cursor:pointer}
+.cloud-player-note .hint{font-size:12px;opacity:.55;margin:6px 0 0}
+
+/* —— 留言仓（导航仓） —— */
+body.board-page{
+  margin:0;background:#07090b;color:#f5f7fa;
+  font-family:"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.board-page .nav{
+  position:sticky;top:0;z-index:70;height:48px;
+  background:rgba(8,10,12,.82);
+  backdrop-filter:saturate(180%) blur(20px);
+}
+.board-shell{
+  max-width:1120px;margin:0 auto;padding:88px 22px 80px;
+  display:grid;grid-template-columns:200px 1fr;gap:28px;
+}
+.board-nav{
+  position:sticky;top:72px;align-self:start;
+  display:flex;flex-direction:column;gap:6px;
+}
+.board-nav .eyebrow{
+  font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+  opacity:.5;margin:0 0 8px;padding-left:12px;
+}
+.board-nav a{
+  color:rgba(245,247,250,.72);text-decoration:none;
+  padding:10px 12px;border-radius:12px;font-size:14px;
+}
+.board-nav a:hover{background:rgba(255,255,255,.06);color:#fff;text-decoration:none}
+.board-nav a.is-on{background:rgba(255,255,255,.1);color:#fff}
+.board-nav .rank-dot{
+  display:inline-block;min-width:1.4em;opacity:.45;font-variant-numeric:tabular-nums;
+}
+.board-hero h1{font-size:42px;letter-spacing:.08em;margin:0 0 8px;font-weight:600}
+.board-hero .en{opacity:.5;margin:0 0 10px;letter-spacing:.18em;font-size:13px}
+.board-hero p{opacity:.72;max-width:36em;line-height:1.6;margin:0}
+.rank-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:22px 0;
+}
+.rank-card{
+  display:block;padding:16px 18px;border-radius:16px;text-decoration:none;color:inherit;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+}
+.rank-card:hover{background:rgba(255,255,255,.07);text-decoration:none}
+.rank-card .num{font-size:12px;opacity:.45;letter-spacing:.14em}
+.rank-card h3{margin:6px 0 4px;font-size:22px;font-weight:600}
+.rank-card .stats{display:flex;flex-wrap:wrap;gap:10px 16px;font-size:13px;opacity:.78}
+.rank-card .bar{
+  height:4px;border-radius:99px;background:rgba(255,255,255,.1);margin-top:12px;overflow:hidden;
+}
+.rank-card .bar > span{display:block;height:100%;background:#9fe8ff;border-radius:99px}
+.rank-card[data-song="shark"] .bar > span{background:#ff6b8a}
+.rank-card[data-song="sub"] .bar > span{background:#6ad4e8}
+.rank-card[data-song="volcano"] .bar > span{background:#ffb060}
+.rank-card[data-song="bait"] .bar > span{background:#c5c9ce}
+.lyric-hot{margin:8px 0 28px}
+.lyric-hot h2,.board-stream h2,.board-compose h2{
+  font-size:15px;letter-spacing:.12em;font-weight:600;margin:0 0 12px;opacity:.8;
+}
+.hot-item{
+  display:flex;gap:12px;align-items:baseline;padding:10px 0;
+  border-bottom:1px solid rgba(255,255,255,.06);font-size:15px;
+}
+.hot-item .n{color:#ff6b8a;font-variant-numeric:tabular-nums;min-width:2.2em}
+.hot-item .song{opacity:.45;font-size:12px;min-width:4.5em}
+.hot-item .txt{flex:1}
+.board-compose{
+  padding:18px;border-radius:16px;background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);margin-bottom:28px;
+}
+.board-compose textarea{
+  width:100%;min-height:96px;border-radius:12px;padding:12px;
+  border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.28);
+  color:#fff;font:inherit;resize:vertical;
+}
+.board-compose .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+.board-compose select,.board-compose button{
+  font:inherit;font-size:13px;border-radius:999px;padding:7px 14px;
+  border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;
+}
+.board-compose button.primary{background:#c41e3a;border-color:#c41e3a;cursor:pointer}
+.comment-card{
+  padding:16px 0;border-bottom:1px solid rgba(255,255,255,.06);
+}
+.comment-card .meta{font-size:12px;opacity:.5;margin-bottom:6px;display:flex;gap:10px;flex-wrap:wrap}
+.comment-card .feeling{
+  border:1px solid rgba(159,232,255,.35);border-radius:999px;padding:1px 8px;color:#9fe8ff;
+}
+.comment-card .body{line-height:1.65;font-size:15px;white-space:pre-wrap}
+.board-empty{opacity:.5;padding:12px 0}
+.stars{letter-spacing:.08em;color:#ffb060}
+
 @media (max-width: 860px){
   .nav-user{display:none !important}
   .nav-login,.nav-logout{margin-left:0;font-size:12px;min-height:44px;display:inline-flex;align-items:center}
@@ -21,4 +169,14 @@
   html{overflow-x:hidden}
   body{padding-bottom:env(safe-area-inset-bottom, 0px)}
   .nav,.nav-inner{height:auto !important;min-height:48px}
+  .board-shell{grid-template-columns:1fr;padding:72px 16px 96px}
+  .board-nav{position:static;flex-direction:row;flex-wrap:wrap;gap:6px}
+  .board-nav .eyebrow{width:100%;padding-left:4px}
+  .rank-grid{grid-template-columns:1fr}
+  .board-hero h1{font-size:32px}
+  .lyric-heart{min-height:44px;width:44px}
+  /* 手机顶栏：hub 额外露出留言仓（ep.css 会藏掉普通链） */
+  body.hub-page .nav-links > a[href="/board.html"]{
+    display:inline-flex !important;align-items:center;min-height:44px;
+  }
 }

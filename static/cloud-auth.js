@@ -9,6 +9,7 @@
       var login = qs("navLogin");
       var user = qs("navUser");
       var logout = qs("navLogout");
+      window.__chenfuMe = me;
       if (me.authenticated) {
         if (login) login.hidden = true;
         if (logout) logout.hidden = false;
@@ -19,8 +20,10 @@
           user.textContent = narrow ? "已登录" : label;
           user.title = label;
         }
+        document.dispatchEvent(new CustomEvent("chenfu-auth", { detail: me }));
         return;
       }
+      document.dispatchEvent(new CustomEvent("chenfu-auth", { detail: me }));
       if (!me.auth_configured) return;
       needAuthLinks().forEach(function (a) {
         a.addEventListener("click", function (ev) {
@@ -29,10 +32,12 @@
           location.href = "/sign-in?return_to=" + encodeURIComponent(to);
         });
       });
-      var bar = document.createElement("div");
-      bar.className = "hub-auth-banner is-on";
-      bar.innerHTML = "登录后可进入歌词卡听歌 · <a href='/sign-in'>去登录</a>";
-      document.body.appendChild(bar);
+      if (document.body.classList.contains("hub-page")) {
+        var bar = document.createElement("div");
+        bar.className = "hub-auth-banner is-on";
+        bar.innerHTML = "登录后可进入歌词卡听歌 · <a href='/sign-in'>去登录</a>";
+        document.body.appendChild(bar);
+      }
     })
     .catch(function () {});
 })();

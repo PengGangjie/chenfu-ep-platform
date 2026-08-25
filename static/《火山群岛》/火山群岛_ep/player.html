@@ -9,6 +9,9 @@
 <link rel="stylesheet" href="assets/player-extras.css"/>
 <link rel="stylesheet" href="assets/shark-seg.css"/>
 <link rel="stylesheet" href="assets/theme-song.css"/>
+  <link rel="icon" href="/brand/app-logo-mark.svg" type="image/svg+xml"/>
+  <link rel="apple-touch-icon" href="/icons/icon-192.png"/>
+  <link rel="stylesheet" href="/cloud-ui.css"/>
 </head>
 <body class="player-page">
   <nav class="nav" aria-label="主导航">
@@ -18,6 +21,10 @@
         <a href="index.html#overview">概览</a>
         <a href="index.html#blk-in">章节</a>
         <a href="../../index.html">《沉浮》</a>
+        <a href="/board.html">留言仓</a>
+        <a class="nav-login" id="navLogin" href="/sign-in">登录</a>
+        <span class="nav-user" id="navUser" hidden></span>
+        <a class="nav-logout" id="navLogout" href="/sign-out" hidden>退出</a>
         <a class="nav-buy" href="#play">播放</a>
       </div>
     </div>
@@ -73,5 +80,7 @@
   <script src="assets/lyrics-versions.js"></script>
   <script src="assets/shark-seg.js"></script>
   <script src="assets/player.js"></script>
+  <script src="/cloud-auth.js"></script>
+  <script src="/cloud-player.js"></script>
 </body>
 </html>

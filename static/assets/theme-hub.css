@@ -19,6 +19,12 @@ body.hub-page .cta-row {
 body.hub-page .cta-row a {
   color: inherit;
 }
+body.hub-page .hero-mark {
+  width: 48px;
+  height: 48px;
+  display: block;
+  margin: 0 0 16px;
+}
 body.hub-page .hub-stage-copy .eyebrow {
   font-size: 12px;
   font-weight: 500;

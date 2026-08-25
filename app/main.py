@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import uuid
 from typing import Union
 from urllib.parse import quote
 
@@ -12,11 +13,29 @@ from fastapi.staticfiles import StaticFiles
 from logto import LogtoClient, LogtoConfig, Storage, UserInfoScope
 from starlette.middleware.sessions import SessionMiddleware
 
+from .catalog import FEELINGS, SONGS, song_or_none
 from .config import get_settings
-from .db import ping_db, upsert_user
+from .db import (
+    add_comment,
+    board_payload,
+    ping_db,
+    toggle_heart,
+    toggle_like,
+    upsert_play,
+    upsert_user,
+)
 
 # 未登录可访问：健康检查、登录流、主页与主页资源（/assets/ 仅为 Hub）
-PUBLIC_EXACT = {"/", "/index.html", "/favicon.ico", "/cloud-auth.js", "/cloud-ui.css"}
+PUBLIC_EXACT = {
+    "/",
+    "/index.html",
+    "/favicon.ico",
+    "/board.html",
+    "/cloud-auth.js",
+    "/cloud-ui.css",
+    "/cloud-player.js",
+    "/cloud-board.js",
+}
 PUBLIC_PREFIXES = (
     "/health",
     "/sign-in",
@@ -24,7 +43,10 @@ PUBLIC_PREFIXES = (
     "/sign-out",
     "/api/me",
     "/assets/",
+    "/brand/",
+    "/icons/",
 )
+PUBLIC_GET_PREFIXES = ("/api/board",)
 
 # 受保护：四曲章节、播放器、歌词卡、音频
 PROTECTED_PREFIXES = (
@@ -102,6 +124,20 @@ def current_sub(request: Request) -> str | None:
     return claims.sub if claims else None
 
 
+def current_actor(request: Request) -> str | None:
+    """登录用户；本地未强制登录时用会话访客，便于本机试留言仓。"""
+    sub = current_sub(request)
+    if sub:
+        return sub
+    if not settings.auth_required or not auth_configured():
+        gid = request.session.get("guest_id")
+        if not gid:
+            gid = "guest-" + uuid.uuid4().hex[:12]
+            request.session["guest_id"] = gid
+        return str(gid)
+    return None
+
+
 def is_public_path(path: str) -> bool:
     if path in PUBLIC_EXACT:
         return True
@@ -139,6 +175,8 @@ def safe_return_to(raw: str | None) -> str:
 async def require_auth(request: Request, call_next):
     path = request.url.path
     if is_public_path(path):
+        return await call_next(request)
+    if request.method in ("GET", "HEAD") and any(path.startswith(p) for p in PUBLIC_GET_PREFIXES):
         return await call_next(request)
     if not settings.auth_required:
         return await call_next(request)
@@ -249,6 +287,100 @@ async def me(request: Request):
         "name": getattr(claims, "name", None) if claims else None,
         "auth_required": settings.auth_required,
     }
+
+
+def _json_error(exc: Exception, status: int = 400) -> JSONResponse:
+    return JSONResponse({"detail": str(exc)}, status_code=status)
+
+
+@app.get("/api/board")
+async def api_board(request: Request, song: str | None = None):
+    actor = current_actor(request)
+    try:
+        body = board_payload(actor, song)
+    except Exception as exc:  # noqa: BLE001
+        return JSONResponse({"db": False, "detail": str(exc), "songs": list(SONGS), "ranking": [], "comments": [], "popular_lyrics": []}, status_code=200)
+    body["me"] = {
+        "authenticated": bool(current_sub(request)),
+        "actor": actor,
+        "guest": bool(actor and str(actor).startswith("guest-")),
+        "auth_configured": auth_configured(),
+        "auth_required": settings.auth_required,
+        "feelings": list(FEELINGS),
+    }
+    return body
+
+
+@app.post("/api/ep/like")
+async def api_like(request: Request):
+    actor = current_actor(request)
+    if not actor:
+        return JSONResponse({"detail": "请先登录再点赞"}, status_code=401)
+    data = await request.json()
+    try:
+        return toggle_like(actor, str(data.get("song_id") or ""))
+    except ValueError as exc:
+        return _json_error(exc)
+
+
+@app.post("/api/ep/heart")
+async def api_heart(request: Request):
+    actor = current_actor(request)
+    if not actor:
+        return JSONResponse({"detail": "请先登录再标注爱心"}, status_code=401)
+    data = await request.json()
+    try:
+        return toggle_heart(
+            actor,
+            str(data.get("song_id") or ""),
+            str(data.get("line_key") or ""),
+            str(data.get("lyric_text") or ""),
+        )
+    except ValueError as exc:
+        return _json_error(exc)
+
+
+@app.post("/api/ep/play")
+async def api_play(request: Request):
+    actor = current_actor(request)
+    if not actor:
+        return JSONResponse({"detail": "未登录，完播不记入排行"}, status_code=401)
+    data = await request.json()
+    dur = data.get("duration_sec")
+    try:
+        dur_f = float(dur) if dur is not None and dur != "" else None
+    except (TypeError, ValueError):
+        dur_f = None
+    try:
+        return upsert_play(
+            actor,
+            str(data.get("song_id") or ""),
+            str(data.get("session_key") or ""),
+            float(data.get("max_ratio") or 0),
+            dur_f,
+        )
+    except (ValueError, TypeError) as exc:
+        return _json_error(exc)
+
+
+@app.post("/api/ep/comment")
+async def api_comment(request: Request):
+    actor = current_actor(request)
+    if not actor:
+        return JSONResponse({"detail": "请先登录再留言"}, status_code=401)
+    data = await request.json()
+    sid = song_or_none(str(data.get("song_id") or "")) if data.get("song_id") else None
+    feeling = str(data.get("feeling") or "").strip()
+    if feeling and feeling not in FEELINGS:
+        feeling = None
+    rating = data.get("rating")
+    try:
+        item = add_comment(actor, sid, str(data.get("body") or ""), feeling, rating)
+    except ValueError as exc:
+        code = 429 if "稍后再" in str(exc) else 400
+        return _json_error(exc, code)
+    item["author"] = "你"
+    return item
 
 
 static_dir = settings.static_dir
