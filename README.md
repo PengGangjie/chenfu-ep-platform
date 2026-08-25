@@ -1,4 +1,4 @@
-# 《沉浮》EP（网页门户 + 登录听歌）
+﻿# 《沉浮》EP（网页门户 + 登录听歌）
 
 独立项目，与实训科 / 人生量化**分开部署**：
 
@@ -29,8 +29,7 @@ cd output\chenfu-ep-platform
 ## 部署
 
 1. 按 `secrets/chenfu-ep/README.md` 新建 Logto 应用，写入 `.env`
-2. 公开 GitHub 仓推送本目录（见 `deploy-config.json`）
-3. Space 额度需有空位（默认每用户 2 个服务）
-4. `.\venv\Scripts\python.exe scripts\deploy_chenfu_ep_space.py`
+2. 公开仓 `main` 推送到 GitHub（见 `deploy-config.json`）
+3. `.\venv\Scripts\python.exe scripts\deploy_chenfu_ep_space.py`
 
-目标：https://chenfu-ep.ai-builders.space
+线上：https://chenfu-ep.ai-builders.space
