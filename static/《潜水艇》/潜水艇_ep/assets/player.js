@@ -15,7 +15,7 @@
   var nowPlaying = document.getElementById("nowPlaying");
   var versions = window.SUB_LYRIC_VERSIONS || window.SHARK_LYRIC_VERSIONS || {};
 
-  var currentVer = versions["3.0"] ? "3.0" : Object.keys(versions)[0] || "2.0";
+  var currentVer = versions["3.0"] ? "3.0" : Object.keys(versions)[0] || "demo";
   var blocks = [];
   var cues = [];
   var flatLines = []; // {block, line, start, end, text, el}
@@ -517,7 +517,7 @@
     applyVersion("3.0", { keepRatio: false });
   } else if (versions[currentVer]) {
     applyVersion(currentVer, { keepRatio: false });
-  } else if (versions["2.0"]) {
-    applyVersion("2.0", { keepRatio: false });
+  } else if (versions["demo"]) {
+    applyVersion("demo", { keepRatio: false });
   }
 })();
