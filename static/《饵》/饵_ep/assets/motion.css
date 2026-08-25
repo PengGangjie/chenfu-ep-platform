@@ -38,6 +38,12 @@
   background: #000;
   color: #fff;
 }
+.player-page .foot {
+  background: #000;
+  border-top: 1px solid rgba(255,255,255,.08);
+  color: rgba(255,255,255,.42);
+  padding: 28px 22px 110px;
+}
 .player-shell {
   max-width: 1080px;
   margin: 0 auto;
