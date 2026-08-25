@@ -7,7 +7,7 @@ from typing import Union
 from urllib.parse import quote
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from logto import LogtoClient, LogtoConfig, Storage, UserInfoScope
 from starlette.middleware.sessions import SessionMiddleware
@@ -122,23 +122,19 @@ async def require_auth(request: Request, call_next):
     path = request.url.path
     if is_public_path(path):
         return await call_next(request)
-    if not settings.auth_required or not auth_configured():
-        # 未配 Logto 时本地可全开；线上部署须配好并 AUTH_REQUIRED=true
+    if not settings.auth_required:
         return await call_next(request)
-    if not needs_login(path):
-        # 其他未知路径：若已登录放行，否则回主页（避免误拦）
-        if current_sub(request):
-            return await call_next(request)
-        if path.startswith("/api/"):
-            return JSONResponse({"detail": "未登录"}, status_code=401)
-        return RedirectResponse("/")
-
+    # AUTH_REQUIRED=true：未配 Logto 也不得放行播放/音频
     if current_sub(request):
         return await call_next(request)
+    if needs_login(path):
+        if path.startswith("/api/"):
+            return JSONResponse({"detail": "未登录"}, status_code=401)
+        ret = quote(path, safe="/")
+        return RedirectResponse(f"/sign-in?return_to={ret}")
     if path.startswith("/api/"):
         return JSONResponse({"detail": "未登录"}, status_code=401)
-    ret = quote(path, safe="/")
-    return RedirectResponse(f"/sign-in?return_to={ret}")
+    return RedirectResponse("/")
 
 
 app.add_middleware(
@@ -165,7 +161,19 @@ async def health():
 @app.get("/sign-in")
 async def sign_in(request: Request):
     if not auth_configured():
-        return JSONResponse({"detail": "未配置 Logto"}, status_code=503)
+        return HTMLResponse(
+            """<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/>
+<title>登录 — 《沉浮》EP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<style>body{font-family:sans-serif;background:#0b1014;color:#f5f7fa;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0}
+main{max-width:28rem;padding:2rem;text-align:center}a{color:#9fe8ff}</style></head>
+<body><main>
+<h1>《沉浮》EP</h1>
+<p>主页可公开浏览。听歌与歌词卡需要登录；当前尚未配置独立 Logto 应用。</p>
+<p><a href="/">返回主页</a></p>
+</main></body></html>""",
+            status_code=503,
+        )
     request.session["return_to"] = safe_return_to(request.query_params.get("return_to"))
     client = logto_client(request)
     url = await client.signIn(redirectUri=settings.logto_redirect_uri)
