@@ -13,8 +13,11 @@
         if (login) login.hidden = true;
         if (logout) logout.hidden = false;
         if (user) {
-          user.hidden = false;
-          user.textContent = me.name || me.email || me.phone || "已登录";
+          var label = me.name || me.email || me.phone || "已登录";
+          var narrow = window.matchMedia("(max-width: 860px)").matches;
+          user.hidden = narrow;
+          user.textContent = narrow ? "已登录" : label;
+          user.title = label;
         }
         return;
       }
