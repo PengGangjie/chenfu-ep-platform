@@ -16,6 +16,9 @@
 .hub-auth-banner a{color:#9fe8ff}
 @media (max-width: 860px){
   .nav-user{display:none !important}
-  .nav-login,.nav-logout{margin-left:0;font-size:12px}
+  .nav-login,.nav-logout{margin-left:0;font-size:12px;min-height:44px;display:inline-flex;align-items:center}
   .hub-auth-banner{bottom:max(12px, env(safe-area-inset-bottom, 0px));font-size:.8rem;white-space:normal;text-align:center}
+  html{overflow-x:hidden}
+  body{padding-bottom:env(safe-area-inset-bottom, 0px)}
+  .nav,.nav-inner{height:auto !important;min-height:48px}
 }

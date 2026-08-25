@@ -1,14 +1,24 @@
 /* 《沉浮》EP 云端登录条 */
 .nav-login,.nav-logout{
   color:#fff;opacity:.9;text-decoration:none;font-size:.85rem;margin-left:.75rem;
+  white-space:nowrap;flex-shrink:0;
 }
 .nav-login{border:1px solid rgba(255,255,255,.45);padding:.35rem .8rem;border-radius:999px}
-.nav-user{margin-left:.75rem;font-size:.8rem;opacity:.75}
+.nav-user{margin-left:.75rem;font-size:.8rem;opacity:.75;white-space:nowrap;max-width:14em;overflow:hidden;text-overflow:ellipsis}
 .hub-auth-banner{
   position:fixed;left:50%;bottom:1.25rem;transform:translateX(-50%);
   z-index:40;background:rgba(10,14,18,.88);color:#f5f7fa;
   padding:.7rem 1.1rem;border-radius:999px;font-size:.9rem;
   display:none;gap:.75rem;align-items:center;backdrop-filter:blur(8px);
+  max-width:calc(100vw - 24px);white-space:nowrap;
 }
 .hub-auth-banner.is-on{display:flex}
 .hub-auth-banner a{color:#9fe8ff}
+@media (max-width: 860px){
+  .nav-user{display:none !important}
+  .nav-login,.nav-logout{margin-left:0;font-size:12px;min-height:44px;display:inline-flex;align-items:center}
+  .hub-auth-banner{bottom:max(12px, env(safe-area-inset-bottom, 0px));font-size:.8rem;white-space:normal;text-align:center}
+  html{overflow-x:hidden}
+  body{padding-bottom:env(safe-area-inset-bottom, 0px)}
+  .nav,.nav-inner{height:auto !important;min-height:48px}
+}
