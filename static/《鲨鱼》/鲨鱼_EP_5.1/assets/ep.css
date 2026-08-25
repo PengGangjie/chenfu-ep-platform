@@ -49,11 +49,13 @@ img { display: block; max-width: 100%; height: auto; }
   padding: 0 22px;
   display: flex; align-items: center; justify-content: space-between;
   font-size: 12px; color: #f5f5f7;
+  min-width: 0;
 }
 .nav a { color: #f5f5f7; opacity: .8; text-decoration: none; }
 .nav a:hover { opacity: 1; text-decoration: none; }
-.nav-brand { font-weight: 600; letter-spacing: .08em; opacity: 1 !important; }
-.nav-links { display: flex; gap: 22px; align-items: center; }
+.nav-brand { font-weight: 600; letter-spacing: .08em; opacity: 1 !important; flex-shrink: 0; }
+.nav-links { display: flex; gap: 22px; align-items: center; min-width: 0; }
+.nav-links a, .nav-user { white-space: nowrap; }
 .nav-buy {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 5px 12px 5px 10px; border-radius: 980px;
@@ -162,6 +164,30 @@ img { display: block; max-width: 100%; height: auto; }
 .chapter-grid.reverse .chapter-copy { order: 1; }
 
 @media (max-width: 860px) {
+  .nav {
+    height: auto;
+    min-height: 48px;
+  }
+  .nav-inner {
+    padding: 8px 14px;
+    gap: 10px;
+  }
+  .nav-links {
+    gap: 8px;
+    flex: 1;
+    justify-content: flex-end;
+  }
+  /* 手机顶栏只留品牌 + 登录/退出，避免汉字被挤成竖排 */
+  body.hub-page .nav-links > a:not(.nav-login):not(.nav-logout) {
+    display: none;
+  }
+  body.player-page .nav-links > a:not(.nav-login):not(.nav-logout) {
+    display: none;
+  }
+  .nav-user { display: none; }
+  .nav-buy { padding: 5px 12px; }
+  .nav-buy::before { display: none; }
+
   .chapter-grid,
   .chapter-grid.reverse {
     grid-template-columns: 1fr;
