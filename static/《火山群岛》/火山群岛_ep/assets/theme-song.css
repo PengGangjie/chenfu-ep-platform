@@ -1,19 +1,79 @@
+/* 《火山群岛》主题 — 熔橙 + 小火山 */
 :root {
   --accent: #e85a24;
   --accent-hover: #c44716;
   --link: #e85a24;
   --link-dark: #ff8a4a;
-  --fin-icon: none;
+  --fin-icon: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2028%2016%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M3.5%2013.8h21L14%204.8%203.5%2013.8z%22%20fill%3D%22%23fff%22%2F%3E%3Cpath%20d%3D%22M12.2%207.2h3.6L14%209.9z%22%20fill%3D%22%23ff8a4a%22%2F%3E%3Cellipse%20cx%3D%2214%22%20cy%3D%226.6%22%20rx%3D%221.3%22%20ry%3D%22.65%22%20fill%3D%22%23ffb366%22%2F%3E%3Cpath%20d%3D%22M12.8%204.6c0-.85.65-1.35%201.25-1.35s1.15.5%201.15%201.2%22%20stroke%3D%22%23fff%22%20stroke-width%3D%22.95%22%20stroke-linecap%3D%22round%22%20opacity%3D%22.8%22%2F%3E%3Cpath%20d%3D%22M14.3%203.1c0-.55.42-.85.85-.85%22%20stroke%3D%22%23fff%22%20stroke-width%3D%22.75%22%20stroke-linecap%3D%22round%22%20opacity%3D%22.6%22%2F%3E%3C%2Fsvg%3E");
+  --shark-logo: var(--fin-icon);
 }
-.nav-buy::before { display: none !important; width: 0 !important; }
-.btn-pill::before { display: none !important; }
-.hero--song .hero-media img { width: 100%; height: 100%; object-fit: cover; }
-.hero-scrim {
-  background: linear-gradient(180deg, rgba(10,8,12,.2) 0%, rgba(20,10,8,.6) 50%, rgba(8,6,10,.92) 100%);
-}
-body.player-page { background: #0c0a0e; }
 
-.lyric-lines { display: flex; flex-direction: column; gap: 2px; }
+.nav-buy,
+.btn-pill,
+.transport button:not(.ghost),
+.floating-dock a.primary {
+  background: var(--accent) !important;
+}
+.nav-buy:hover,
+.btn-pill:hover,
+.transport button:not(.ghost):hover,
+.floating-dock a.primary:hover {
+  background: var(--accent-hover) !important;
+}
+
+.nav-buy::before,
+.btn-pill::before,
+.transport button:not(.ghost)::before,
+.floating-dock a.primary::before {
+  display: block !important;
+  width: 18px !important;
+  height: 11px !important;
+  background: var(--fin-icon) center / contain no-repeat !important;
+}
+
+.shark-seg__thumb {
+  background: rgba(232, 90, 36, 0.95) !important;
+}
+
+.sync-block.is-on {
+  border-left: 3px solid var(--accent) !important;
+  padding-left: 12px;
+}
+.sync-progress span {
+  background: linear-gradient(90deg, #e85a24, #ff8a4a) !important;
+}
+.now-playing {
+  color: rgba(255, 138, 74, 0.92) !important;
+}
+.mood-rail a.is-on {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+  opacity: 1;
+  transform: scale(1.25);
+}
+
+.hero--song .hero-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.hero-scrim {
+  background: linear-gradient(
+    180deg,
+    rgba(10, 8, 12, 0.2) 0%,
+    rgba(20, 10, 8, 0.6) 50%,
+    rgba(8, 6, 10, 0.92) 100%
+  );
+}
+body.player-page {
+  background: #0c0a0e;
+}
+
+.lyric-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
 .sync-line,
 .lyric-line {
   display: grid;
@@ -30,7 +90,7 @@ body.player-page { background: #0c0a0e; }
   font: inherit;
   cursor: pointer;
   border-radius: 6px;
-  transition: color .15s ease, background .15s ease;
+  transition: color 0.15s ease, background 0.15s ease;
 }
 .sync-line:hover,
 .lyric-line:hover {
@@ -42,11 +102,17 @@ body.player-page { background: #0c0a0e; }
   letter-spacing: 0.02em;
   color: rgba(245, 245, 247, 0.38);
 }
-.lyric-text { line-height: 1.45; }
+.lyric-text {
+  line-height: 1.45;
+}
 .sync-line.is-on,
-.lyric-line.is-on { color: var(--accent); }
+.lyric-line.is-on {
+  color: var(--accent);
+}
 .sync-line.is-on .lyric-time,
-.lyric-line.is-on .lyric-time { color: rgba(255, 138, 74, 0.95); }
+.lyric-line.is-on .lyric-time {
+  color: rgba(255, 138, 74, 0.95);
+}
 .sync-line.is-locked,
 .lyric-line.is-locked {
   color: var(--accent);
@@ -57,4 +123,9 @@ body.player-page { background: #0c0a0e; }
 .lyric-line.is-stage .lyric-text {
   opacity: 0.55;
   font-style: italic;
+}
+.lyric-line.is-on {
+  color: #fff;
+  background: rgba(232, 90, 36, 0.18);
+  transform: translateX(4px);
 }

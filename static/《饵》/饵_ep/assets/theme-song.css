@@ -1,18 +1,92 @@
-
+/* 《饵》主题 — 雾蓝 + 小鱼钩 */
 :root {
   --accent: #5a7a88;
   --accent-hover: #3d5a66;
   --link: #5a7a88;
   --link-dark: #9ec0cc;
-  --fin-icon: none;
+  --fin-icon: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2028%2016%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M11%201.2V2.8c0%200%203.5.6%203.5%203.8%200%202.4-1.6%204.2-4%204.2-2%200-3.4-1.3-3.4-3%200-1.1.5-1.9%201.1-2.4%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.55%22%20stroke-linecap%3D%22round%22%2F%3E%3Cpath%20d%3D%22M8.4%2011.8L6.2%2013.6%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.35%22%20stroke-linecap%3D%22round%22%2F%3E%3Ccircle%20cx%3D%2211%22%20cy%3D%221.2%22%20r%3D%22.95%22%20stroke%3D%22%239ec0cc%22%20stroke-width%3D%221%22%20fill%3D%22none%22%2F%3E%3Cpath%20d%3D%22M11%20.2V0%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.1%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E");
+  --shark-logo: var(--fin-icon);
 }
-.nav-buy::before { display: none !important; width: 0 !important; }
-.btn-pill::before { display: none !important; }
-.hero--song .hero-media img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.85); }
+
+.nav-buy,
+.btn-pill,
+.transport button:not(.ghost),
+.floating-dock a.primary {
+  background: var(--accent) !important;
+}
+.nav-buy:hover,
+.btn-pill:hover,
+.transport button:not(.ghost):hover,
+.floating-dock a.primary:hover {
+  background: var(--accent-hover) !important;
+}
+
+.nav-buy::before,
+.btn-pill::before,
+.transport button:not(.ghost)::before,
+.floating-dock a.primary::before {
+  display: block !important;
+  width: 18px !important;
+  height: 11px !important;
+  background: var(--fin-icon) center / contain no-repeat !important;
+}
+
+.shark-seg__thumb {
+  background: rgba(90, 122, 136, 0.95) !important;
+}
+
+.sync-block.is-on {
+  border-left: 3px solid var(--accent);
+  padding-left: 12px;
+}
+.sync-progress {
+  height: 2px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+  margin: 0 0 10px;
+  overflow: hidden;
+}
+.sync-progress span {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #5a7a88, #9ec0cc);
+  transition: width 0.12s linear;
+}
+.sync-block:not(.is-on) .sync-progress {
+  opacity: 0.25;
+}
+.now-playing {
+  margin-top: 12px;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: rgba(158, 192, 204, 0.92);
+}
+.mood-rail a.is-on {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+  opacity: 1;
+  transform: scale(1.25);
+}
+
+.hero--song .hero-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.85);
+}
 .hero-scrim {
-  background: linear-gradient(180deg, rgba(20,28,34,.25) 0%, rgba(20,28,34,.55) 45%, rgba(20,28,34,.88) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(20, 28, 34, 0.25) 0%,
+    rgba(20, 28, 34, 0.55) 45%,
+    rgba(20, 28, 34, 0.88) 100%
+  );
 }
-body.player-page { background: #11161a; }
+body.player-page {
+  background: #11161a;
+}
+
 .sync-line {
   display: block;
   width: 100%;
@@ -25,12 +99,14 @@ body.player-page { background: #11161a; }
   font: inherit;
   cursor: pointer;
   border-radius: 4px;
-  transition: color .15s ease, background .15s ease;
+  transition: color 0.15s ease, background 0.15s ease;
 }
 .sync-line:hover {
   background: rgba(255, 255, 255, 0.06);
 }
-.sync-line.is-on { color: var(--accent); }
+.sync-line.is-on {
+  color: var(--accent);
+}
 .sync-line.is-locked {
   color: var(--accent);
   background: rgba(120, 160, 180, 0.18);
