@@ -577,14 +577,10 @@ def board_payload(sub: str | None, song_id: str | None = None) -> dict[str, Any]
         play_rows = client.execute(
             """
             SELECT song_id,
-                   COUNT(*) AS listeners,
-                   SUM(CASE WHEN best >= ? THEN 1 ELSE 0 END) AS completes,
-                   AVG(best) AS avg_ratio
-            FROM (
-              SELECT song_id, logto_sub, MAX(max_ratio) AS best
-              FROM ep_play_sessions
-              GROUP BY song_id, logto_sub
-            ) t
+                   COUNT(DISTINCT logto_sub) AS listeners,
+                   SUM(CASE WHEN max_ratio >= ? THEN 1 ELSE 0 END) AS completes,
+                   AVG(max_ratio) AS avg_ratio
+            FROM ep_play_sessions
             GROUP BY song_id
             """,
             [COMPLETE_RATIO],
@@ -597,7 +593,7 @@ def board_payload(sub: str | None, song_id: str | None = None) -> dict[str, Any]
         listeners = play.get(i, {}).get("listeners", 0)
         completes = play.get(i, {}).get("completes", 0)
         avg_ratio = play.get(i, {}).get("avg_ratio", 0.0)
-        rate = (completes / listeners) if listeners else 0.0
+        rate = min(1.0, avg_ratio) if avg_ratio else 0.0
         songs_out.append(
             {
                 **meta,
@@ -613,7 +609,7 @@ def board_payload(sub: str | None, song_id: str | None = None) -> dict[str, Any]
         )
     ranked = sorted(
         songs_out,
-        key=lambda s: (s["likes"], s["completion_rate"], s["hearts"], s["avg_ratio"]),
+        key=lambda s: (s["likes"], s["completes"], s["hearts"], s["avg_ratio"]),
         reverse=True,
     )
     for i, item in enumerate(ranked, 1):

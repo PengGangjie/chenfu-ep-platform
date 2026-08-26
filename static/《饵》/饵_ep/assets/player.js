@@ -144,7 +144,7 @@
       btnAlt.style.display = ver.alt ? "" : "none";
       btnAlt.textContent = "备选 take";
     }
-    if (creditMeta) creditMeta.textContent = ver.credit || "";
+    if (creditMeta) creditMeta.textContent = ver.credit || "词 · PUMBAA彭八　·　曲 · PUMBAA彭八";
     if (hint) hint.textContent = (ver.hintPrefix || "") + " · 点击歌词可锁定并跳到该句";
     renderBlocks(ver);
     if (versionSwitch) {

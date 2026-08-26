@@ -101,6 +101,8 @@
             "</h3>" +
             '<div class="stats">' +
             "<span>完播 " +
+            (s.completes || 0) +
+            " 次</span><span>深度 " +
             pct(s.completion_rate) +
             "</span>" +
             "<span>♥ " +
@@ -582,7 +584,7 @@
     return {
       h: s.title,
       en: s.en,
-      p: s.pitch + " 完播率 " + pct(s.completion_rate) + " · 全 EP 第 " + s.rank + "。"
+      p: s.pitch + " 完播 " + (s.completes || 0) + " 次 · 深度 " + pct(s.completion_rate) + " · 全 EP 第 " + s.rank + "。"
     };
   }
 

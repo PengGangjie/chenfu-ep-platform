@@ -235,7 +235,12 @@ body.board-page{
   display:inline-flex;align-items:center;gap:6px;font-size:13px;opacity:.78;cursor:pointer;
 }
 .anon-check input{accent-color:#ffb060}
-.admin-tools{display:inline-flex;gap:6px;margin-left:auto}
+.transport .row button.is-on,
+#btnLoop.is-on{
+  border-color:rgba(159,232,255,.65);
+  color:#9fe8ff;
+  background:rgba(159,232,255,.12);
+}
 .admin-btn{
   border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.06);
   color:rgba(245,247,250,.85);border-radius:999px;padding:2px 10px;font:inherit;font-size:11px;cursor:pointer;

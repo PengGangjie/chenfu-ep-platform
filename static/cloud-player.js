@@ -24,6 +24,20 @@
   var lastFlush = 0;
   var hearts = {};
   var canWrite = true;
+  var loopOne = false;
+
+  function newSessionKey() {
+    return (
+      (window.crypto && crypto.randomUUID && crypto.randomUUID()) ||
+      String(Date.now()) + "-" + Math.random().toString(16).slice(2)
+    );
+  }
+
+  function resetPlaySession() {
+    sessionKey = newSessionKey();
+    maxRatio = 0;
+    lastFlush = 0;
+  }
 
   function api(path, body) {
     if (window.chenfuApi) return window.chenfuApi(path, body);
@@ -81,7 +95,9 @@
     var el = document.getElementById("cloudSongMeta");
     if (!el || !song) return;
     el.textContent =
-      "完播率 " +
+      "完播 " +
+      (song.completes || 0) +
+      " 次 · 深度 " +
       fmtPct(song.completion_rate) +
       " · 排名第 " +
       (song.rank || "—") +
@@ -304,6 +320,28 @@
     return Math.max(0, Math.min(1, audio.currentTime / audio.duration));
   }
 
+  function ensureLoopBtn() {
+    if (document.getElementById("btnLoop")) return;
+    var row = document.querySelector(".transport .row");
+    if (!row) return;
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "ghost";
+    btn.id = "btnLoop";
+    btn.textContent = "单曲循环";
+    btn.setAttribute("aria-pressed", "false");
+    btn.title = "循环播放；每次完整播完计入单曲数据";
+    btn.addEventListener("click", function () {
+      loopOne = !loopOne;
+      btn.classList.toggle("is-on", loopOne);
+      btn.setAttribute("aria-pressed", loopOne ? "true" : "false");
+      btn.textContent = loopOne ? "循环中" : "单曲循环";
+    });
+    var alt = document.getElementById("btnAlt");
+    if (alt && alt.parentNode === row) alt.insertAdjacentElement("afterend", btn);
+    else row.appendChild(btn);
+  }
+
   function flushPlay(force) {
     var audio = document.getElementById("audio");
     if (!audio) return;
@@ -330,6 +368,12 @@
     audio.addEventListener("ended", function () {
       maxRatio = 1;
       flushPlay(true);
+      if (loopOne) {
+        resetPlaySession();
+        audio.currentTime = 0;
+        audio.play().catch(function () {});
+        loadSocial();
+      }
     });
     audio.addEventListener("pause", function () {
       flushPlay(true);
@@ -358,6 +402,7 @@
   }
 
   ensureBar();
+  ensureLoopBtn();
   ensureComposer();
   injectDock();
   decorateLines();
