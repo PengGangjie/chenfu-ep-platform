@@ -197,6 +197,8 @@ def is_public_path(path: str) -> bool:
     if any(path.startswith(p) for p in PUBLIC_PREFIXES):
         return True
     lower = path.lower()
+    if any(lower.endswith(s) for s in AUDIO_SUFFIXES):
+        return True
     if any(lower.endswith(s) for s in PUBLIC_STATIC_SUFFIXES):
         return True
     return False

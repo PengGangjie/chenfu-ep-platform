@@ -163,6 +163,7 @@
       });
       blockEl.addEventListener("click", function (e) {
         if (e.target.closest(".lyric-line")) return;
+        if (e.target.closest(".lyric-heart")) return;
         setActive(bi, true);
         if (audio && audio.paused) audio.play().catch(function () {});
       });

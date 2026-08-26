@@ -88,6 +88,7 @@
     syncRoot.querySelectorAll(".sync-block").forEach(function (el) {
       el.addEventListener("click", function (e) {
         if (e.target.closest(".sync-line")) return;
+        if (e.target.closest(".lyric-heart")) return;
         var bi = +el.getAttribute("data-i");
         seekToLine(bi, 0, true);
       });

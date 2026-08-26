@@ -33,22 +33,27 @@
 .cloud-song-bar a{color:#9fe8ff;text-decoration:none;font-size:13px}
 .cloud-song-bar a:hover{text-decoration:underline}
 
-/* 歌词行爱心：包在 lyric-line 外侧，避免 button 套 button */
+/* 歌词行爱心：包在 lyric-line / sync-line 外侧，避免 button 套 button */
 .lyric-row{
-  display:flex;align-items:flex-start;gap:2px;width:100%;
+  display:flex;align-items:center;gap:4px;width:100%;
 }
-.lyric-row .lyric-line{flex:1;min-width:0}
+.lyric-row .lyric-line,
+.lyric-row .sync-line{
+  flex:1 1 auto;min-width:0;width:auto;
+}
 .lyric-heart{
-  flex-shrink:0;width:40px;min-height:36px;margin-top:4px;
+  flex:0 0 auto;width:36px;height:36px;min-width:36px;min-height:36px;
+  max-width:36px;max-height:36px;margin:0;padding:0;
   border:0;border-radius:10px;background:transparent;cursor:pointer;
-  color:rgba(255,255,255,.32);display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:0;padding:2px 0;
-  font:inherit;line-height:1.1;
+  color:rgba(255,255,255,.32);display:inline-flex;flex-direction:row;
+  align-items:center;justify-content:center;gap:1px;
+  font:inherit;line-height:1;touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;position:relative;z-index:2;
 }
 .lyric-heart:hover{color:#ff8aa0;background:rgba(255,77,109,.12)}
 .lyric-heart.is-on{color:#ff4d6d}
-.lyric-heart .glyph{font-size:15px}
-.lyric-heart .n{font-size:10px;opacity:.8;font-variant-numeric:tabular-nums}
+.lyric-heart .glyph{font-size:16px;line-height:1;flex-shrink:0}
+.lyric-heart .n{font-size:9px;line-height:1;opacity:.8;font-variant-numeric:tabular-nums;flex-shrink:0}
 .lyric-heart.is-on .n{opacity:1}
 
 .cloud-player-note{
@@ -261,7 +266,10 @@ body.board-page{
   .board-nav .eyebrow{width:100%;padding-left:4px}
   .rank-grid{grid-template-columns:1fr}
   .board-hero h1{font-size:32px}
-  .lyric-heart{min-height:44px;width:44px}
+  .lyric-heart{
+    width:44px;height:44px;min-width:44px;min-height:44px;
+    max-width:44px;max-height:44px;
+  }
   /* 手机顶栏：hub 额外露出留言仓（ep.css 会藏掉普通链） */
   body.hub-page .nav-links > a[href="/board.html"]{
     display:inline-flex !important;align-items:center;min-height:44px;

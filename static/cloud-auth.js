@@ -38,7 +38,6 @@
     return document.querySelectorAll("[data-need-auth], a[href*='player.html'], a.btn-pill[href*='_ep/']");
   }
   window.chenfuApi("/api/me")
-    .then(function (r) { return r.json(); })
     .then(function (me) {
       var login = qs("navLogin");
       var user = qs("navUser");
@@ -66,7 +65,9 @@
         login.title = "管理员登录";
       }
       document.dispatchEvent(new CustomEvent("chenfu-auth", { detail: me }));
-      if (!me.auth_configured || !me.auth_required) return;
+      if (!me.auth_configured || !me.auth_required) {
+        return;
+      }
       needAuthLinks().forEach(function (a) {
         a.addEventListener("click", function (ev) {
           ev.preventDefault();

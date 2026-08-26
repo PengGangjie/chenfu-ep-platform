@@ -125,7 +125,7 @@
   }
 
   function decorateLines() {
-    document.querySelectorAll(".lyric-line").forEach(function (el) {
+    document.querySelectorAll(".lyric-line, .sync-line").forEach(function (el) {
       if (el.closest(".lyric-row")) return;
       var wrap = document.createElement("div");
       wrap.className = "lyric-row";
@@ -359,6 +359,17 @@
     }).catch(function () {});
   }
 
+  function patchAudio() {
+    var audio = document.getElementById("audio");
+    if (!audio || audio.dataset.cloudPatched) return;
+    audio.dataset.cloudPatched = "1";
+    if (!audio.getAttribute("preload")) audio.setAttribute("preload", "metadata");
+    audio.addEventListener("error", function () {
+      var hint = document.getElementById("audioHint");
+      if (hint) hint.textContent = "音频加载失败，请刷新页面或检查网络。";
+    });
+  }
+
   function watchAudio() {
     var audio = document.getElementById("audio");
     if (!audio) return;
@@ -398,9 +409,10 @@
         if (btn) paintHeart(btn, hearts[k]);
       });
     });
-    mo.observe(lyrics, { childList: true, subtree: false });
+    mo.observe(lyrics, { childList: true, subtree: true });
   }
 
+  patchAudio();
   ensureBar();
   ensureLoopBtn();
   ensureComposer();
