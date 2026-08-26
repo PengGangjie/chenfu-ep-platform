@@ -72,6 +72,87 @@
     });
   }
 
+  function applyHeartsToDom() {
+    Object.keys(hearts).forEach(function (k) {
+      var btn = document.querySelector('.lyric-heart[data-line-key="' + k + '"]');
+      if (btn) paintHeart(btn, hearts[k]);
+    });
+  }
+
+  function postHeart(key, lineEl, prev, btn) {
+    var payload = {
+      song_id: songId,
+      line_key: key,
+      lyric_text: lineText(lineEl),
+      guest_key: guestKey()
+    };
+    fetch("/api/ep/heart", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      keepalive: true
+    })
+      .then(function (r) {
+        return r.json().then(function (j) {
+          j._status = r.status;
+          return j;
+        });
+      })
+      .then(function (j) {
+        if (j._status >= 400 || j.detail) {
+          hearts[key] = prev;
+          paintHeart(btn, prev);
+          return;
+        }
+        hearts[key] = { count: j.count, mine: j.mine, text: lineText(lineEl) };
+        paintHeart(btn, hearts[key]);
+      })
+      .catch(function () {});
+  }
+
+  function toggleHeartOptimistic(key, btn, lineEl) {
+    var prev = hearts[key] ? Object.assign({}, hearts[key]) : { count: 0, mine: false, text: lineText(lineEl) };
+    var nextMine = !prev.mine;
+    var nextCount = Math.max(0, (prev.count || 0) + (nextMine ? 1 : -1));
+    hearts[key] = { count: nextCount, mine: nextMine, text: lineText(lineEl) };
+    paintHeart(btn, hearts[key]);
+    postHeart(key, lineEl, prev, btn);
+  }
+
+  function bindHeartDelegation() {
+    var root = document.getElementById("syncLyrics");
+    if (!root || root.dataset.heartBound) return;
+    root.dataset.heartBound = "1";
+    function onHeart(ev) {
+      var btn = ev.target.closest(".lyric-heart");
+      if (!btn) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      ev.stopImmediatePropagation();
+      var key = btn.getAttribute("data-line-key");
+      var row = btn.closest(".lyric-row");
+      var lineEl = row && row.querySelector(".lyric-line, .sync-line");
+      if (!key || !lineEl) return;
+      toggleHeartOptimistic(key, btn, lineEl);
+    }
+    root.addEventListener("click", onHeart, true);
+    root.addEventListener(
+      "touchend",
+      function (ev) {
+        if (!ev.target.closest(".lyric-heart")) return;
+        ev.preventDefault();
+        onHeart(ev);
+      },
+      { capture: true, passive: false }
+    );
+  }
+
+  function deferIdle(fn) {
+    if (window.requestIdleCallback) window.requestIdleCallback(fn, { timeout: 2500 });
+    else setTimeout(fn, 16);
+  }
+
   function fmtPct(n) {
     return Math.round((n || 0) * 100) + "%";
   }
@@ -155,19 +236,6 @@
       btn.setAttribute("data-line-key", key);
       btn.innerHTML = '<span class="glyph">♡</span><span class="n"></span>';
       paintHeart(btn, hearts[key]);
-      btn.addEventListener("click", function (ev) {
-        ev.preventDefault();
-        ev.stopPropagation();
-        api("/api/ep/heart", {
-          song_id: songId,
-          line_key: key,
-          lyric_text: lineText(el)
-        }).then(function (j) {
-          if (j._status >= 400) return;
-          hearts[key] = { count: j.count, mine: j.mine, text: lineText(el) };
-          paintHeart(btn, hearts[key]);
-        });
-      });
       wrap.appendChild(btn);
     });
   }
@@ -314,20 +382,15 @@
   }
 
   function loadSocial() {
-    api("/api/board?song=" + encodeURIComponent(songId)).then(function (j) {
-      if (!j || !j.songs) return;
-      var song = null;
-      (j.songs || []).forEach(function (s) {
-        if (s.id === songId) song = s;
-      });
+    api("/api/ep/player?song=" + encodeURIComponent(songId)).then(function (j) {
+      if (!j || !j.song) return;
+      var song = j.song;
       ensureBar();
-      if (song) {
-        paintLike(song.likes, song.liked);
-        paintMeta(song);
-        paintFlower(document.getElementById("cloudNoteFlower"), song.likes, song.liked);
-      }
+      paintLike(song.likes, song.liked);
+      paintMeta(song);
+      paintFlower(document.getElementById("cloudNoteFlower"), song.likes, song.liked);
       hearts = j.hearts_map || {};
-      decorateLines();
+      applyHeartsToDom();
     });
   }
 
@@ -379,7 +442,7 @@
     var audio = document.getElementById("audio");
     if (!audio || audio.dataset.cloudPatched) return;
     audio.dataset.cloudPatched = "1";
-    if (!audio.getAttribute("preload")) audio.setAttribute("preload", "metadata");
+    if (!audio.getAttribute("preload")) audio.setAttribute("preload", "auto");
     audio.addEventListener("error", function () {
       var hint = document.getElementById("audioHint");
       if (hint) hint.textContent = "音频加载失败，请刷新页面或检查网络。";
@@ -399,7 +462,6 @@
         resetPlaySession();
         audio.currentTime = 0;
         audio.play().catch(function () {});
-        loadSocial();
       }
     });
     audio.addEventListener("pause", function () {
@@ -418,22 +480,31 @@
 
   var lyrics = document.getElementById("syncLyrics");
   if (lyrics && window.MutationObserver) {
-    var mo = new MutationObserver(function () {
+    var mo = new MutationObserver(function (mutations) {
+      var added = false;
+      for (var i = 0; i < mutations.length; i++) {
+        var m = mutations[i];
+        if (m.type === "childList" && m.addedNodes.length) {
+          added = true;
+          break;
+        }
+      }
+      if (!added) return;
       decorateLines();
-      Object.keys(hearts).forEach(function (k) {
-        var btn = document.querySelector('.lyric-heart[data-line-key="' + k + '"]');
-        if (btn) paintHeart(btn, hearts[k]);
-      });
+      applyHeartsToDom();
     });
     mo.observe(lyrics, { childList: true, subtree: true });
   }
 
+  bindHeartDelegation();
   patchAudio();
   ensureBar();
   ensureLoopBtn();
-  ensureComposer();
   injectDock();
   decorateLines();
-  loadSocial();
   watchAudio();
+  deferIdle(function () {
+    loadSocial();
+    ensureComposer();
+  });
 })();

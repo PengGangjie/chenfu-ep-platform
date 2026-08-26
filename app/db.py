@@ -758,3 +758,92 @@ def board_payload(
     if with_dev_messages:
         payload["dev_messages"] = dev_messages
     return payload
+
+
+def player_social_payload(sub: str | None, song_id: str) -> dict[str, Any]:
+    """播放页专用：单连接拉取当前曲点赞与歌词爱心，避免整板 board_payload。"""
+    ensure_schema()
+    sid = song_or_none(song_id)
+    if not sid:
+        raise ValueError("未知曲目")
+    meta = next((s for s in SONGS if s["id"] == sid), None)
+    with turso_client() as client:
+        likes = _count_map_client(client, "SELECT song_id, COUNT(*) FROM ep_song_likes GROUP BY song_id")
+        hearts_n = _count_map_client(client, "SELECT song_id, COUNT(*) FROM ep_lyric_hearts GROUP BY song_id")
+        play_rows = client.execute(
+            """
+            SELECT song_id,
+                   COUNT(DISTINCT logto_sub) AS listeners,
+                   SUM(CASE WHEN max_ratio >= ? THEN 1 ELSE 0 END) AS completes,
+                   AVG(max_ratio) AS avg_ratio
+            FROM ep_play_sessions
+            GROUP BY song_id
+            """,
+            [COMPLETE_RATIO],
+        ).rows
+        liked = False
+        if sub:
+            liked = bool(
+                client.execute(
+                    "SELECT 1 FROM ep_song_likes WHERE logto_sub = ? AND song_id = ? LIMIT 1",
+                    [sub, sid],
+                ).rows
+            )
+        mine_keys: set[str] = set()
+        if sub:
+            mine_keys = {
+                str(r[0])
+                for r in client.execute(
+                    "SELECT line_key FROM ep_lyric_hearts WHERE song_id = ? AND logto_sub = ?",
+                    [sid, sub],
+                ).rows
+            }
+        hearts_map: dict[str, dict[str, Any]] = {}
+        for key, text, n in client.execute(
+            """
+            SELECT line_key, MAX(lyric_text), COUNT(*)
+            FROM ep_lyric_hearts
+            WHERE song_id = ?
+            GROUP BY line_key
+            """,
+            [sid],
+        ).rows:
+            k = str(key)
+            hearts_map[k] = {"count": int(n or 0), "mine": k in mine_keys, "text": str(text or "")}
+    play = {
+        str(r[0]): {"listeners": int(r[1] or 0), "completes": int(r[2] or 0), "avg_ratio": float(r[3] or 0)}
+        for r in play_rows
+    }
+    stats = []
+    for sm in SONGS:
+        i = sm["id"]
+        avg_ratio = play.get(i, {}).get("avg_ratio", 0.0)
+        stats.append(
+            (
+                i,
+                likes.get(i, 0),
+                play.get(i, {}).get("completes", 0),
+                hearts_n.get(i, 0),
+                avg_ratio,
+            )
+        )
+    stats.sort(key=lambda x: (x[1], x[2], x[3], x[4]), reverse=True)
+    rank = next((n + 1 for n, row in enumerate(stats) if row[0] == sid), 0)
+    p = play.get(sid, {"listeners": 0, "completes": 0, "avg_ratio": 0.0})
+    avg_ratio = float(p.get("avg_ratio") or 0)
+    rate = min(1.0, avg_ratio) if avg_ratio else 0.0
+    return {
+        "song_id": sid,
+        "song": {
+            "id": sid,
+            "title": meta["title"] if meta else sid,
+            "likes": likes.get(sid, 0),
+            "liked": liked,
+            "hearts": hearts_n.get(sid, 0),
+            "listeners": int(p.get("listeners") or 0),
+            "completes": int(p.get("completes") or 0),
+            "completion_rate": round(rate, 4),
+            "rank": rank,
+        },
+        "hearts_map": hearts_map,
+    }

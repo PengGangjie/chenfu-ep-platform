@@ -24,6 +24,7 @@ from .db import (
     delete_comment,
     delete_dev_message,
     ping_db,
+    player_social_payload,
     toggle_heart,
     toggle_like,
     upsert_play,
@@ -51,7 +52,7 @@ PUBLIC_PREFIXES = (
     "/brand/",
     "/icons/",
 )
-PUBLIC_GET_PREFIXES = ("/api/board",)
+PUBLIC_GET_PREFIXES = ("/api/board", "/api/ep/player")
 SOCIAL_API_PREFIX = "/api/ep/"
 ADMIN_API_PREFIX = "/api/ep/admin/"
 GUEST_KEY_RE = re.compile(r"^guest-[a-f0-9]{12}$")
@@ -395,6 +396,22 @@ async def api_board(request: Request, song: str | None = None, section: str | No
         body["section"] = "dev"
         body["carousel"] = list(CAROUSEL_IMAGES)
         body["announcements"] = list(DEV_ANNOUNCEMENTS)
+    return body
+
+
+@app.get("/api/ep/player")
+async def api_player_social(request: Request, song: str | None = None, guest_key: str | None = None):
+    actor = current_actor(request, guest_key)
+    try:
+        body = player_social_payload(actor, str(song or ""))
+    except ValueError as exc:
+        return _json_error(exc)
+    except Exception as exc:  # noqa: BLE001
+        return JSONResponse({"detail": str(exc), "song": None, "hearts_map": {}}, status_code=200)
+    body["me"] = {
+        "guest": bool(actor.startswith("guest-")),
+        "guest_id": actor if actor.startswith("guest-") else None,
+    }
     return body
 
 

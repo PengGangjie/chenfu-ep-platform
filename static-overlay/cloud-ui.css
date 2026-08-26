@@ -47,8 +47,8 @@
   border:0;border-radius:10px;background:transparent;cursor:pointer;
   color:rgba(255,255,255,.32);display:inline-flex;flex-direction:row;
   align-items:center;justify-content:center;gap:1px;
-  font:inherit;line-height:1;touch-action:manipulation;
-  -webkit-tap-highlight-color:transparent;position:relative;z-index:2;
+  font:inherit;line-height:1;touch-action:manipulation;user-select:none;
+  -webkit-tap-highlight-color:transparent;position:relative;z-index:4;
 }
 .lyric-heart:hover{color:#ff8aa0;background:rgba(255,77,109,.12)}
 .lyric-heart.is-on{color:#ff4d6d}
