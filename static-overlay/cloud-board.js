@@ -135,13 +135,92 @@
       .join("");
   }
 
+  function savedNick() {
+    return localStorage.getItem("chenfu_nick") || "";
+  }
+
+  function nickRow(prefix) {
+    return (
+      '<div class="compose-nick">' +
+      '<input type="text" id="' +
+      prefix +
+      'Nick" maxlength="24" placeholder="署名（可选，留空则显示听友/访客）" value="' +
+      esc(savedNick()) +
+      '"/>' +
+      '<label class="anon-check"><input type="checkbox" id="' +
+      prefix +
+      'Anon"/> 匿名发布</label></div>'
+    );
+  }
+
+  function readNickPayload(prefix) {
+    var anonEl = document.getElementById(prefix + "Anon");
+    var nickEl = document.getElementById(prefix + "Nick");
+    var anon = !!(anonEl && anonEl.checked);
+    var nick = nickEl ? (nickEl.value || "").trim() : "";
+    if (!anon && nick) localStorage.setItem("chenfu_nick", nick);
+    return { display_name: anon ? null : nick || null, anonymous: anon };
+  }
+
+  function isAdmin() {
+    return !!(boardData && boardData.me && boardData.me.is_admin);
+  }
+
+  function adminToolsComment(c) {
+    if (!isAdmin()) return "";
+    var clearBtn = c.rating
+      ? '<button type="button" class="admin-btn" data-admin-clear="' + c.id + '">清除评分</button>'
+      : "";
+    return (
+      '<span class="admin-tools">' +
+      clearBtn +
+      '<button type="button" class="admin-btn admin-btn--danger" data-admin-del-comment="' +
+      c.id +
+      '">删除留言</button></span>'
+    );
+  }
+
+  function adminToolsDev(id) {
+    if (!isAdmin()) return "";
+    return (
+      '<span class="admin-tools">' +
+      '<button type="button" class="admin-btn admin-btn--danger" data-admin-del-dev="' +
+      id +
+      '">删除</button></span>'
+    );
+  }
+
+  function adminDelete(path) {
+    return fetch(path, { method: "DELETE", credentials: "same-origin", headers: { Accept: "application/json" } }).then(
+      function (r) {
+        return r.json().then(function (j) {
+          j._status = r.status;
+          return j;
+        });
+      }
+    );
+  }
+
+  function adminPost(path) {
+    return fetch(path, { method: "POST", credentials: "same-origin", headers: { Accept: "application/json" } }).then(
+      function (r) {
+        return r.json().then(function (j) {
+          j._status = r.status;
+          return j;
+        });
+      }
+    );
+  }
+
   function commentsHtml(list) {
     if (!list || !list.length) return '<p class="board-empty">留言仓还是空的。听完一首，把看法留在这里。</p>';
     return list
       .map(function (c) {
         var stars = c.rating ? '<span class="stars">' + "★".repeat(c.rating) + "</span>" : "";
         return (
-          '<article class="comment-card"><div class="meta"><span>' +
+          '<article class="comment-card" data-id="' +
+          c.id +
+          '"><div class="meta"><span>' +
           esc(c.author) +
           "</span><span>" +
           esc(c.title) +
@@ -149,7 +228,9 @@
           stars +
           "<span>" +
           esc(String(c.created_at || "").replace("T", " ").slice(0, 16)) +
-          "</span></div><div class=\"body\">" +
+          "</span>" +
+          adminToolsComment(c) +
+          '</div><div class="body">' +
           esc(c.body) +
           "</div></article>"
         );
@@ -162,11 +243,15 @@
     return list
       .map(function (m) {
         return (
-          '<article class="comment-card dev-msg"><div class="meta"><span>' +
+          '<article class="comment-card dev-msg" data-id="' +
+          m.id +
+          '"><div class="meta"><span>' +
           esc(m.author) +
           "</span><span>" +
           esc(String(m.created_at || "").replace("T", " ").slice(0, 16)) +
-          '</span></div><div class="body">' +
+          "</span>" +
+          adminToolsDev(m.id) +
+          '</div><div class="body">' +
           esc(m.body) +
           "</div></article>"
         );
@@ -324,45 +409,29 @@
     else paintFlower(btn, 0, false);
   }
 
-  function composeHtml(me) {
-    var needLogin = me && me.auth_configured && me.auth_required && !me.authenticated;
-    var lock = needLogin
-      ? '<p class="board-empty">登录后才能写入留言仓。完播与点赞也会记到你的听歌身份上。<a href="/sign-in?return_to=/board.html">去登录</a></p>'
-      : "";
+  function composeHtml() {
     return (
       "<h2>写下看法</h2>" +
-      lock +
-      '<textarea id="boardBody" maxlength="800" placeholder="这首让你停在哪一句？想不想再听？不必写乐评腔。" ' +
-      (needLogin ? "disabled" : "") +
-      "></textarea>" +
+      nickRow("board") +
+      '<textarea id="boardBody" maxlength="800" placeholder="这首让你停在哪一句？想不想再听？不必写乐评腔。"></textarea>' +
       '<div class="row">' +
       '<select id="boardSongSel"></select>' +
       flowerHtml("boardFlower") +
       '<span class="rate-label">评分</span>' +
       starsHtml("boardRate") +
-      '<button type="button" class="primary" id="boardSend"' +
-      (needLogin ? " disabled" : "") +
-      ">写入留言仓</button>" +
+      '<button type="button" class="primary" id="boardSend">写入留言仓</button>' +
       "</div>" +
       '<p class="board-empty" id="boardHint"></p>'
     );
   }
 
-  function devComposeHtml(me) {
-    var needLogin = me && me.auth_configured && me.auth_required && !me.authenticated;
-    var lock = needLogin
-      ? '<p class="board-empty">登录后才能留言。<a href="/sign-in?return_to=/board.html?section=dev">去登录</a></p>'
-      : "";
+  function devComposeHtml() {
     return (
       "<h2>写给开发者</h2>" +
-      lock +
-      '<textarea id="devBody" maxlength="800" placeholder="Bug、建议、合作意向、或任何想直接说的话。" ' +
-      (needLogin ? "disabled" : "") +
-      "></textarea>" +
+      nickRow("dev") +
+      '<textarea id="devBody" maxlength="800" placeholder="Bug、建议、合作意向、或任何想直接说的话。"></textarea>' +
       '<div class="row">' +
-      '<button type="button" class="primary" id="devSend"' +
-      (needLogin ? " disabled" : "") +
-      ">发送留言</button>" +
+      '<button type="button" class="primary" id="devSend">发送留言</button>' +
       "</div>" +
       '<p class="board-empty" id="devHint"></p>'
     );
@@ -409,11 +478,11 @@
         hint.textContent = "先写一句再送进留言仓。";
         return;
       }
-      api("/api/ep/comment", {
+      api("/api/ep/comment", Object.assign({
         song_id: document.getElementById("boardSongSel").value,
         body: body,
         rating: getRating("boardRate")
-      }).then(function (j) {
+      }, readNickPayload("board"))).then(function (j) {
         if (j.detail && j._status >= 400) {
           hint.textContent = j.detail;
           return;
@@ -436,6 +505,33 @@
     });
   }
 
+  function bindAdmin() {
+    if (!isAdmin()) return;
+    document.querySelectorAll("[data-admin-del-comment]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        if (!confirm("确定删除这条留言？")) return;
+        adminDelete("/api/ep/admin/comment/" + btn.getAttribute("data-admin-del-comment")).then(function () {
+          load();
+        });
+      });
+    });
+    document.querySelectorAll("[data-admin-clear]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        adminPost("/api/ep/admin/comment/" + btn.getAttribute("data-admin-clear") + "/clear-rating").then(function () {
+          load();
+        });
+      });
+    });
+    document.querySelectorAll("[data-admin-del-dev]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        if (!confirm("确定删除这条留言？")) return;
+        adminDelete("/api/ep/admin/dev-message/" + btn.getAttribute("data-admin-del-dev")).then(function () {
+          load();
+        });
+      });
+    });
+  }
+
   function bindDevCompose() {
     var btn = document.getElementById("devSend");
     if (!btn) return;
@@ -446,7 +542,7 @@
         hint.textContent = "先写一句再发送。";
         return;
       }
-      api("/api/ep/dev-message", { body: body }).then(function (j) {
+      api("/api/ep/dev-message", Object.assign({ body: body }, readNickPayload("dev"))).then(function (j) {
         if (j.detail && j._status >= 400) {
           hint.textContent = j.detail;
           return;
@@ -493,7 +589,7 @@
     return (
       carouselHtml(j.carousel, j.announcements) +
       '<section class="board-compose dev-compose">' +
-      devComposeHtml(j.me) +
+      devComposeHtml() +
       "</section>" +
       '<section class="board-stream"><h2>听友留言</h2>' +
       devMessagesHtml(j.dev_messages) +
@@ -508,9 +604,9 @@
       '<section class="lyric-hot"><h2>热门歌词爱心</h2>' +
       hotHtml(j.popular_lyrics) +
       "</section>" +
-      '<section class="board-compose" id="boardCompose">' +
-      composeHtml(j.me) +
-      "</section>" +
+        '<section class="board-compose" id="boardCompose">' +
+        composeHtml() +
+        "</section>" +
       '<section class="board-stream"><h2>听友看法</h2>' +
       commentsHtml(j.comments) +
       "</section>"
@@ -550,6 +646,7 @@
         startCarousel();
       }
       bindNav();
+      bindAdmin();
     });
   }
 

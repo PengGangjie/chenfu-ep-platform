@@ -49,13 +49,21 @@
         if (logout) logout.hidden = false;
         if (user) {
           var label = me.name || me.email || me.phone || "已登录";
+          if (me.is_admin) label = "管理员 · " + label;
           var narrow = window.matchMedia("(max-width: 860px)").matches;
           user.hidden = narrow;
-          user.textContent = narrow ? "已登录" : label;
+          user.textContent = narrow ? (me.is_admin ? "管理员" : "已登录") : label;
           user.title = label;
         }
         document.dispatchEvent(new CustomEvent("chenfu-auth", { detail: me }));
         return;
+      }
+      if (login && document.body.classList.contains("hub-page")) {
+        login.hidden = true;
+      }
+      if (login && document.body.classList.contains("board-page")) {
+        login.textContent = "管理员";
+        login.title = "管理员登录";
       }
       document.dispatchEvent(new CustomEvent("chenfu-auth", { detail: me }));
       if (!me.auth_configured || !me.auth_required) return;

@@ -20,6 +20,9 @@ from .db import (
     add_comment,
     add_dev_message,
     board_payload,
+    clear_comment_rating,
+    delete_comment,
+    delete_dev_message,
     list_dev_messages,
     ping_db,
     toggle_heart,
@@ -51,6 +54,7 @@ PUBLIC_PREFIXES = (
 )
 PUBLIC_GET_PREFIXES = ("/api/board",)
 SOCIAL_API_PREFIX = "/api/ep/"
+ADMIN_API_PREFIX = "/api/ep/admin/"
 GUEST_KEY_RE = re.compile(r"^guest-[a-f0-9]{12}$")
 
 # 受保护：四曲章节、播放器、歌词卡、音频
@@ -157,6 +161,28 @@ def ensure_actor_user(actor: str) -> None:
         pass
 
 
+def current_user_email(request: Request) -> str | None:
+    if not auth_configured() or not current_sub(request):
+        return None
+    claims = logto_client(request).getIdTokenClaims()
+    email = getattr(claims, "email", None) if claims else None
+    return str(email).strip() if email else None
+
+
+def is_admin(request: Request) -> bool:
+    email = current_user_email(request)
+    if not email or not settings.admin_emails:
+        return False
+    return email.lower() in settings.admin_emails
+
+
+def admin_payload(request: Request) -> dict[str, Any]:
+    return {
+        "is_admin": is_admin(request),
+        "admin_configured": bool(settings.admin_emails),
+    }
+
+
 async def read_json_body(request: Request) -> dict[str, Any]:
     try:
         data = await request.json()
@@ -206,6 +232,8 @@ async def require_auth(request: Request, call_next):
     if request.method in ("GET", "HEAD") and any(path.startswith(p) for p in PUBLIC_GET_PREFIXES):
         return await call_next(request)
     if path.startswith(SOCIAL_API_PREFIX) and request.method == "POST":
+        return await call_next(request)
+    if path.startswith(ADMIN_API_PREFIX):
         return await call_next(request)
     if not settings.auth_required:
         return await call_next(request)
@@ -316,6 +344,7 @@ async def me(request: Request, guest_key: str | None = None):
             "auth_required": settings.auth_required,
             "auth_configured": auth_configured(),
             "guest": False,
+            **admin_payload(request),
         }
     actor = current_actor(request, guest_key)
     ensure_actor_user(actor)
@@ -325,6 +354,7 @@ async def me(request: Request, guest_key: str | None = None):
         "guest_id": actor,
         "auth_configured": auth_configured(),
         "auth_required": settings.auth_required,
+        **admin_payload(request),
     }
 
 
@@ -349,6 +379,7 @@ async def api_board(request: Request, song: str | None = None, section: str | No
         "auth_configured": auth_configured(),
         "auth_required": settings.auth_required,
         "feelings": list(FEELINGS),
+        **admin_payload(request),
     }
     if sec == "dev":
         body["section"] = "dev"
@@ -417,8 +448,18 @@ async def api_comment(request: Request):
     if feeling and feeling not in FEELINGS:
         feeling = None
     rating = data.get("rating")
+    display_name_in = str(data.get("display_name") or "").strip()[:24] or None
+    anonymous = bool(data.get("anonymous"))
     try:
-        item = add_comment(actor, sid, str(data.get("body") or ""), feeling, rating)
+        item = add_comment(
+            actor,
+            sid,
+            str(data.get("body") or ""),
+            feeling,
+            rating,
+            display_name_in,
+            anonymous,
+        )
     except ValueError as exc:
         code = 429 if "稍后再" in str(exc) else 400
         return _json_error(exc, code)
@@ -432,12 +473,44 @@ async def api_dev_message(request: Request):
     actor = current_actor(request, str(data.get("guest_key") or ""))
     ensure_actor_user(actor)
     try:
-        item = add_dev_message(actor, str(data.get("body") or ""))
+        item = add_dev_message(
+            actor,
+            str(data.get("body") or ""),
+            str(data.get("display_name") or "").strip()[:24] or None,
+            bool(data.get("anonymous")),
+        )
     except ValueError as exc:
         code = 429 if "稍后再" in str(exc) else 400
         return _json_error(exc, code)
     item["author"] = "你"
     return item
+
+
+@app.delete("/api/ep/admin/comment/{comment_id}")
+async def admin_delete_comment(request: Request, comment_id: int):
+    if not is_admin(request):
+        return JSONResponse({"detail": "需要管理员权限"}, status_code=403)
+    if not delete_comment(comment_id):
+        return JSONResponse({"detail": "留言不存在"}, status_code=404)
+    return {"ok": True, "id": comment_id}
+
+
+@app.post("/api/ep/admin/comment/{comment_id}/clear-rating")
+async def admin_clear_rating(request: Request, comment_id: int):
+    if not is_admin(request):
+        return JSONResponse({"detail": "需要管理员权限"}, status_code=403)
+    if not clear_comment_rating(comment_id):
+        return JSONResponse({"detail": "留言不存在"}, status_code=404)
+    return {"ok": True, "id": comment_id}
+
+
+@app.delete("/api/ep/admin/dev-message/{message_id}")
+async def admin_delete_dev_message(request: Request, message_id: int):
+    if not is_admin(request):
+        return JSONResponse({"detail": "需要管理员权限"}, status_code=403)
+    if not delete_dev_message(message_id):
+        return JSONResponse({"detail": "留言不存在"}, status_code=404)
+    return {"ok": True, "id": message_id}
 
 
 static_dir = settings.static_dir

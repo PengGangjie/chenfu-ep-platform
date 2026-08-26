@@ -225,8 +225,14 @@
     var box = document.createElement("div");
     box.className = "cloud-player-note";
     box.id = "cloudNote";
+    var savedNick = localStorage.getItem("chenfu_nick") || "";
     box.innerHTML =
       "<label>听完想说</label>" +
+      '<div class="compose-nick">' +
+      '<input type="text" id="cloudNoteNick" maxlength="24" placeholder="署名（可选）" value="' +
+      savedNick.replace(/"/g, "&quot;") +
+      '"/>' +
+      '<label class="anon-check"><input type="checkbox" id="cloudNoteAnon"/> 匿名发布</label></div>' +
       '<textarea id="cloudNoteBody" maxlength="800" placeholder="某句歌词、或想留给下一位听友的话"></textarea>' +
       '<div class="row">' +
       flowerHtml("cloudNoteFlower") +
@@ -234,7 +240,7 @@
       starsHtml("cloudNoteRate") +
       '<button type="button" class="primary" id="cloudNoteSend">写入留言仓</button>' +
       "</div>" +
-      '<p class="hint" id="cloudNoteHint">登录后会记入完播与排名。爱心点在歌词行右侧。</p>';
+      '<p class="hint" id="cloudNoteHint">访客也会记入完播与排名。爱心点在歌词行右侧。</p>';
     root.insertAdjacentElement("afterend", box);
     bindStars("cloudNoteRate");
     bindFlower("cloudNoteFlower", songId);
@@ -244,10 +250,15 @@
         document.getElementById("cloudNoteHint").textContent = "先写一句再送进留言仓。";
         return;
       }
+      var anon = document.getElementById("cloudNoteAnon").checked;
+      var nick = (document.getElementById("cloudNoteNick").value || "").trim();
+      if (!anon && nick) localStorage.setItem("chenfu_nick", nick);
       api("/api/ep/comment", {
         song_id: songId,
         body: body,
-        rating: getRating("cloudNoteRate")
+        rating: getRating("cloudNoteRate"),
+        display_name: anon ? null : nick || null,
+        anonymous: anon
       }).then(function (j) {
         if (j.detail && j._status >= 400) {
           document.getElementById("cloudNoteHint").textContent = j.detail;

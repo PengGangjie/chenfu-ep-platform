@@ -62,6 +62,8 @@ SCHEMA_STATEMENTS = (
       body TEXT NOT NULL,
       feeling TEXT,
       rating INTEGER,
+      display_name TEXT,
+      is_anonymous INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
     """,
@@ -70,6 +72,8 @@ SCHEMA_STATEMENTS = (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       logto_sub TEXT NOT NULL,
       body TEXT NOT NULL,
+      display_name TEXT,
+      is_anonymous INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
     """,
@@ -137,6 +141,19 @@ def ensure_schema() -> None:
     with turso_client() as client:
         for stmt in SCHEMA_STATEMENTS:
             client.execute(stmt.strip())
+        _migrate_columns(client)
+
+
+def _migrate_columns(client) -> None:
+    migrations = (
+        ("ep_comments", ("display_name", "TEXT"), ("is_anonymous", "INTEGER NOT NULL DEFAULT 0")),
+        ("ep_dev_messages", ("display_name", "TEXT"), ("is_anonymous", "INTEGER NOT NULL DEFAULT 0")),
+    )
+    for table, *cols in migrations:
+        existing = {str(r[1]) for r in client.execute(f"PRAGMA table_info({table})").rows}
+        for col, typedef in cols:
+            if col not in existing:
+                client.execute(f"ALTER TABLE {table} ADD COLUMN {col} {typedef}")
 
 
 def ping_db() -> str:
@@ -294,7 +311,29 @@ def last_comment_age_sec(sub: str) -> float | None:
     return float(rows[0][0])
 
 
-def add_comment(sub: str, song_id: str | None, body: str, feeling: str | None, rating: int | None) -> dict[str, Any]:
+def resolve_comment_author(
+    display_name_col: str | None,
+    is_anonymous: int | bool,
+    user_name: str | None,
+    user_email: str | None,
+    sub: str,
+) -> str:
+    if is_anonymous:
+        return "匿名"
+    if display_name_col and str(display_name_col).strip():
+        return str(display_name_col).strip()[:24]
+    return display_name(user_name, user_email, sub)
+
+
+def add_comment(
+    sub: str,
+    song_id: str | None,
+    body: str,
+    feeling: str | None,
+    rating: int | None,
+    guest_display_name: str | None = None,
+    anonymous: bool = False,
+) -> dict[str, Any]:
     sid = song_or_none(song_id) if song_id else None
     text = (body or "").strip()
     if not text:
@@ -305,6 +344,10 @@ def add_comment(sub: str, song_id: str | None, body: str, feeling: str | None, r
     rate = int(rating) if rating else None
     if rate is not None and rate not in (1, 2, 3, 4, 5):
         rate = None
+    nick = (guest_display_name or "").strip()[:24] or None
+    anon = 1 if anonymous else 0
+    if anonymous:
+        nick = None
     ensure_schema()
     age = last_comment_age_sec(sub)
     if age is not None and age < 20:
@@ -312,10 +355,10 @@ def add_comment(sub: str, song_id: str | None, body: str, feeling: str | None, r
     with turso_client() as client:
         client.execute(
             """
-            INSERT INTO ep_comments (logto_sub, song_id, body, feeling, rating)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO ep_comments (logto_sub, song_id, body, feeling, rating, display_name, is_anonymous)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
-            [sub, sid, text, feel, rate],
+            [sub, sid, text, feel, rate, nick, anon],
         )
         row = client.execute(
             "SELECT id, created_at FROM ep_comments WHERE logto_sub = ? ORDER BY id DESC LIMIT 1",
@@ -327,8 +370,31 @@ def add_comment(sub: str, song_id: str | None, body: str, feeling: str | None, r
         "body": text,
         "feeling": feel,
         "rating": rate,
+        "display_name": nick,
+        "anonymous": bool(anon),
+        "author": "匿名" if anon else (nick or "听友"),
         "created_at": str(row[1]),
     }
+
+
+def delete_comment(comment_id: int) -> bool:
+    ensure_schema()
+    with turso_client() as client:
+        exists = client.execute("SELECT 1 FROM ep_comments WHERE id = ?", [comment_id]).rows
+        if not exists:
+            return False
+        client.execute("DELETE FROM ep_comments WHERE id = ?", [comment_id])
+    return True
+
+
+def clear_comment_rating(comment_id: int) -> bool:
+    ensure_schema()
+    with turso_client() as client:
+        exists = client.execute("SELECT 1 FROM ep_comments WHERE id = ?", [comment_id]).rows
+        if not exists:
+            return False
+        client.execute("UPDATE ep_comments SET rating = NULL WHERE id = ?", [comment_id])
+    return True
 
 
 def song_hearts(song_id: str, sub: str | None) -> dict[str, dict[str, Any]]:
@@ -392,7 +458,7 @@ def list_comments(song_id: str | None, limit: int = 40) -> list[dict[str, Any]]:
     sid = song_or_none(song_id) if song_id else None
     sql = """
         SELECT c.id, c.song_id, c.body, c.feeling, c.rating, c.created_at,
-               c.logto_sub, u.name, u.email
+               c.logto_sub, u.name, u.email, c.display_name, c.is_anonymous
         FROM ep_comments c
         LEFT JOIN ep_users u ON u.logto_sub = c.logto_sub
     """
@@ -416,7 +482,7 @@ def list_comments(song_id: str | None, limit: int = 40) -> list[dict[str, Any]]:
                 "feeling": r[3],
                 "rating": int(r[4]) if r[4] is not None else None,
                 "created_at": str(r[5]),
-                "author": display_name(r[7], r[8], str(r[6])),
+                "author": resolve_comment_author(r[9], r[10], r[7], r[8], str(r[6])),
             }
         )
     return out
@@ -433,33 +499,52 @@ def last_dev_message_age_sec(sub: str) -> float | None:
     return float(rows[0][0])
 
 
-def add_dev_message(sub: str, body: str) -> dict[str, Any]:
+def add_dev_message(
+    sub: str,
+    body: str,
+    guest_display_name: str | None = None,
+    anonymous: bool = False,
+) -> dict[str, Any]:
     text = (body or "").strip()
     if not text:
         raise ValueError("请写下留言")
     if len(text) > 800:
         raise ValueError("留言请控制在 800 字内")
+    nick = (guest_display_name or "").strip()[:24] or None
+    anon = 1 if anonymous else 0
+    if anonymous:
+        nick = None
     ensure_schema()
     age = last_dev_message_age_sec(sub)
     if age is not None and age < 30:
         raise ValueError("请稍后再留言")
     with turso_client() as client:
         client.execute(
-            "INSERT INTO ep_dev_messages (logto_sub, body) VALUES (?, ?)",
-            [sub, text],
+            "INSERT INTO ep_dev_messages (logto_sub, body, display_name, is_anonymous) VALUES (?, ?, ?, ?)",
+            [sub, text, nick, anon],
         )
         row = client.execute(
             "SELECT id, created_at FROM ep_dev_messages WHERE logto_sub = ? ORDER BY id DESC LIMIT 1",
             [sub],
         ).rows[0]
-    return {"id": int(row[0]), "body": text, "created_at": str(row[1])}
+    return {"id": int(row[0]), "body": text, "created_at": str(row[1]), "author": "匿名" if anon else (nick or "听友")}
+
+
+def delete_dev_message(message_id: int) -> bool:
+    ensure_schema()
+    with turso_client() as client:
+        exists = client.execute("SELECT 1 FROM ep_dev_messages WHERE id = ?", [message_id]).rows
+        if not exists:
+            return False
+        client.execute("DELETE FROM ep_dev_messages WHERE id = ?", [message_id])
+    return True
 
 
 def list_dev_messages(limit: int = 50) -> list[dict[str, Any]]:
     with turso_client() as client:
         rows = client.execute(
             """
-            SELECT m.id, m.body, m.created_at, m.logto_sub, u.name, u.email
+            SELECT m.id, m.body, m.created_at, m.logto_sub, u.name, u.email, m.display_name, m.is_anonymous
             FROM ep_dev_messages m
             LEFT JOIN ep_users u ON u.logto_sub = m.logto_sub
             ORDER BY m.id DESC
@@ -472,7 +557,7 @@ def list_dev_messages(limit: int = 50) -> list[dict[str, Any]]:
             "id": int(r[0]),
             "body": str(r[1]),
             "created_at": str(r[2]),
-            "author": display_name(r[4], r[5], str(r[3])),
+            "author": resolve_comment_author(r[6], r[7], r[4], r[5], str(r[3])),
         }
         for r in rows
     ]

@@ -32,6 +32,7 @@ class Settings:
     logto_post_logout_uri: str
     turso_database_url: str
     turso_auth_token: str
+    admin_emails: frozenset[str]
     static_dir: Path
     port: int
 
@@ -49,6 +50,8 @@ def get_settings() -> Settings:
     turso_url = os.getenv("TURSO_DATABASE_URL", "").strip()
     if turso_url.startswith("libsql://"):
         turso_url = turso_url.replace("libsql://", "https://", 1)
+    admin_raw = os.getenv("ADMIN_EMAILS", "")
+    admin_emails = frozenset(e.strip().lower() for e in admin_raw.split(",") if e.strip())
     return Settings(
         app_name="chenfu-ep",
         session_secret=os.getenv("SESSION_SECRET", "dev-change-me-chenfu-ep"),
@@ -60,6 +63,7 @@ def get_settings() -> Settings:
         logto_post_logout_uri=post_logout,
         turso_database_url=turso_url,
         turso_auth_token=os.getenv("TURSO_AUTH_TOKEN", "").strip(),
+        admin_emails=admin_emails,
         static_dir=static,
         port=int(os.getenv("PORT", "8020")),
     )
