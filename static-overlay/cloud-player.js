@@ -410,14 +410,21 @@
   }
 
   function ensureLoopBtn() {
-    if (document.getElementById("btnLoop")) return;
-    var row = document.querySelector(".transport .row");
-    if (!row) return;
-    var btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "ghost";
-    btn.id = "btnLoop";
-    btn.textContent = "单曲循环";
+    var btn = document.getElementById("btnLoop");
+    if (!btn) {
+      var row = document.querySelector(".transport .row");
+      if (!row) return;
+      btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "ghost";
+      btn.id = "btnLoop";
+      btn.textContent = "单曲循环";
+      var play = document.getElementById("btnPlay");
+      if (play && play.parentNode === row) play.insertAdjacentElement("afterend", btn);
+      else row.appendChild(btn);
+    }
+    if (btn.dataset.loopBound) return;
+    btn.dataset.loopBound = "1";
     btn.setAttribute("aria-pressed", "false");
     btn.title = "循环播放；每次完整播完计入单曲数据";
     btn.addEventListener("click", function () {
@@ -426,9 +433,6 @@
       btn.setAttribute("aria-pressed", loopOne ? "true" : "false");
       btn.textContent = loopOne ? "循环中" : "单曲循环";
     });
-    var alt = document.getElementById("btnAlt");
-    if (alt && alt.parentNode === row) alt.insertAdjacentElement("afterend", btn);
-    else row.appendChild(btn);
   }
 
   function flushPlay(force) {

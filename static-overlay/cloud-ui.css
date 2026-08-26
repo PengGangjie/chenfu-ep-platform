@@ -275,8 +275,158 @@ body.board-page{
     width:44px;height:44px;min-width:44px;min-height:44px;
     max-width:44px;max-height:44px;
   }
-  /* 手机顶栏：hub 额外露出留言仓（ep.css 会藏掉普通链） */
   body.hub-page .nav-links > a[href="/board.html"]{
     display:inline-flex !important;align-items:center;min-height:44px;
+  }
+
+  /* —— 播放页：歌词卡全屏背景 + 追踪居中 —— */
+  body.player-page{
+    overflow:hidden;
+    min-height:100dvh;
+  }
+  body.player-page .foot{display:none}
+  body.player-page .player-shell{
+    position:relative;
+    min-height:calc(100dvh - 48px);
+    max-width:none;
+    margin:0;
+    padding:0 0 calc(88px + env(safe-area-inset-bottom, 0px));
+    display:flex;
+    flex-direction:column;
+    gap:0;
+    justify-items:stretch;
+  }
+  body.player-page .lyric-card-stage{
+    position:fixed;
+    inset:0;
+    top:48px;
+    width:100% !important;
+    max-width:none;
+    z-index:0;
+    pointer-events:none;
+  }
+  body.player-page .lyric-card-stage .tarot-frame{
+    position:absolute;
+    inset:0;
+    border-radius:0;
+    animation:none !important;
+    box-shadow:none;
+  }
+  body.player-page .lyric-card-stage .card-stack{
+    position:absolute;
+    inset:0;
+    line-height:0;
+  }
+  body.player-page .lyric-card-stage .card-stack img{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    object-position:center 28%;
+  }
+  body.player-page .lyric-card-stage .tarot-frame::after{
+    animation:none !important;
+    opacity:.35;
+  }
+  body.player-page .lyric-card-stage::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    z-index:6;
+    background:linear-gradient(
+      180deg,
+      rgba(0,0,0,.78) 0%,
+      rgba(0,0,0,.42) 32%,
+      rgba(0,0,0,.48) 62%,
+      rgba(0,0,0,.82) 100%
+    );
+    pointer-events:none;
+  }
+  body.player-page .lyric-card-stage .mood-pulse,
+  body.player-page .lyric-card-stage .mood-rail,
+  body.player-page .lyric-card-stage .card-back-home{
+    display:none !important;
+  }
+  body.player-page .lyric-card-stage .water-glass,
+  body.player-page .lyric-card-stage .bubbles{
+    z-index:4;
+    opacity:.55;
+  }
+  body.player-page .player-panel{
+    position:relative;
+    z-index:2;
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+    width:100%;
+    max-width:100%;
+    padding:8px 14px 0;
+  }
+  body.player-page .player-panel .eyebrow,
+  body.player-page .player-panel .meta,
+  body.player-page .player-panel .hint{display:none}
+  body.player-page .player-panel .headline{
+    font-size:22px;
+    margin:0 0 4px;
+    text-shadow:0 2px 16px rgba(0,0,0,.65);
+  }
+  body.player-page .transport{
+    order:-1;
+    margin-top:0;
+    padding:10px 12px;
+    background:rgba(0,0,0,.52);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    border-color:rgba(255,255,255,.12);
+  }
+  body.player-page .transport audio{
+    height:34px;
+    opacity:.92;
+  }
+  body.player-page .transport .row{
+    margin-top:10px;
+    gap:8px;
+  }
+  body.player-page .transport .version-switch,
+  body.player-page .transport .track-switch{
+    border-left:0;
+    padding-left:0;
+    margin-left:0;
+    flex-wrap:wrap;
+  }
+  body.player-page .now-playing{
+    margin-top:8px;
+    font-size:12px;
+    text-shadow:0 1px 8px rgba(0,0,0,.6);
+  }
+  body.player-page .cloud-song-bar{margin:6px 0 2px}
+  body.player-page .sync-lyrics{
+    flex:1;
+    min-height:0;
+    margin-top:6px;
+    max-height:none;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    padding:18vh 2px 24vh;
+    scroll-behavior:smooth;
+    mask-image:linear-gradient(180deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
+    -webkit-mask-image:linear-gradient(180deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
+  }
+  body.player-page .sync-lyrics .sync-line.is-on,
+  body.player-page .sync-lyrics .lyric-line.is-on{
+    position:sticky;
+    top:42%;
+    z-index:2;
+  }
+  body.player-page .sync-block{
+    opacity:.32;
+  }
+  body.player-page .sync-block.is-on{
+    opacity:1;
+  }
+  body.player-page .floating-dock{
+    z-index:80;
   }
 }
