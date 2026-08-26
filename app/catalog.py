@@ -78,6 +78,9 @@ def song_or_none(song_id: str | None) -> str | None:
     return None
 
 
+DEFAULT_NICK = "匿名泡泡"
+
+
 def display_name(name: str | None, email: str | None, sub: str) -> str:
     if name and name.strip():
         return name.strip()[:24]

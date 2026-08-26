@@ -150,22 +150,17 @@
       '<div class="compose-nick">' +
       '<input type="text" id="' +
       prefix +
-      'Nick" maxlength="24" placeholder="署名（可选，留空则显示听友/访客）" value="' +
+      'Nick" maxlength="24" placeholder="署名（可选，留空则为匿名泡泡）" value="' +
       esc(savedNick()) +
-      '"/>' +
-      '<label class="anon-check"><input type="checkbox" id="' +
-      prefix +
-      'Anon"/> 匿名发布</label></div>'
+      '"/></div>'
     );
   }
 
   function readNickPayload(prefix) {
-    var anonEl = document.getElementById(prefix + "Anon");
     var nickEl = document.getElementById(prefix + "Nick");
-    var anon = !!(anonEl && anonEl.checked);
     var nick = nickEl ? (nickEl.value || "").trim() : "";
-    if (!anon && nick) localStorage.setItem("chenfu_nick", nick);
-    return { display_name: anon ? null : nick || null, anonymous: anon };
+    if (nick) localStorage.setItem("chenfu_nick", nick);
+    return { display_name: nick || "匿名泡泡", anonymous: false };
   }
 
   function isAdmin() {

@@ -229,10 +229,9 @@
     box.innerHTML =
       "<label>听完想说</label>" +
       '<div class="compose-nick">' +
-      '<input type="text" id="cloudNoteNick" maxlength="24" placeholder="署名（可选）" value="' +
+      '<input type="text" id="cloudNoteNick" maxlength="24" placeholder="署名（可选，留空则为匿名泡泡）" value="' +
       savedNick.replace(/"/g, "&quot;") +
-      '"/>' +
-      '<label class="anon-check"><input type="checkbox" id="cloudNoteAnon"/> 匿名发布</label></div>' +
+      '"/></div>' +
       '<textarea id="cloudNoteBody" maxlength="800" placeholder="某句歌词、或想留给下一位听友的话"></textarea>' +
       '<div class="row">' +
       flowerHtml("cloudNoteFlower") +
@@ -250,15 +249,14 @@
         document.getElementById("cloudNoteHint").textContent = "先写一句再送进留言仓。";
         return;
       }
-      var anon = document.getElementById("cloudNoteAnon").checked;
       var nick = (document.getElementById("cloudNoteNick").value || "").trim();
-      if (!anon && nick) localStorage.setItem("chenfu_nick", nick);
+      if (nick) localStorage.setItem("chenfu_nick", nick);
       api("/api/ep/comment", {
         song_id: songId,
         body: body,
         rating: getRating("cloudNoteRate"),
-        display_name: anon ? null : nick || null,
-        anonymous: anon
+        display_name: nick || "匿名泡泡",
+        anonymous: false
       }).then(function (j) {
         if (j.detail && j._status >= 400) {
           document.getElementById("cloudNoteHint").textContent = j.detail;

@@ -9,7 +9,7 @@ from typing import Any, Iterator
 
 from libsql_client import create_client_sync
 
-from .catalog import COMPLETE_RATIO, SONGS, display_name, song_or_none
+from .catalog import COMPLETE_RATIO, DEFAULT_NICK, SONGS, display_name, song_or_none
 from .config import get_settings
 
 SCHEMA_STATEMENTS = (
@@ -311,6 +311,15 @@ def last_comment_age_sec(sub: str) -> float | None:
     return float(rows[0][0])
 
 
+def resolve_guest_nick(guest_display_name: str | None, anonymous: bool) -> tuple[str | None, int]:
+    if anonymous:
+        return None, 1
+    nick = (guest_display_name or "").strip()[:24]
+    if not nick:
+        nick = DEFAULT_NICK
+    return nick, 0
+
+
 def resolve_comment_author(
     display_name_col: str | None,
     is_anonymous: int | bool,
@@ -344,10 +353,7 @@ def add_comment(
     rate = int(rating) if rating else None
     if rate is not None and rate not in (1, 2, 3, 4, 5):
         rate = None
-    nick = (guest_display_name or "").strip()[:24] or None
-    anon = 1 if anonymous else 0
-    if anonymous:
-        nick = None
+    nick, anon = resolve_guest_nick(guest_display_name, anonymous)
     ensure_schema()
     age = last_comment_age_sec(sub)
     if age is not None and age < 20:
@@ -372,7 +378,7 @@ def add_comment(
         "rating": rate,
         "display_name": nick,
         "anonymous": bool(anon),
-        "author": "匿名" if anon else (nick or "听友"),
+        "author": "匿名" if anon else (nick or DEFAULT_NICK),
         "created_at": str(row[1]),
     }
 
@@ -510,10 +516,7 @@ def add_dev_message(
         raise ValueError("请写下留言")
     if len(text) > 800:
         raise ValueError("留言请控制在 800 字内")
-    nick = (guest_display_name or "").strip()[:24] or None
-    anon = 1 if anonymous else 0
-    if anonymous:
-        nick = None
+    nick, anon = resolve_guest_nick(guest_display_name, anonymous)
     ensure_schema()
     age = last_dev_message_age_sec(sub)
     if age is not None and age < 30:
@@ -527,7 +530,7 @@ def add_dev_message(
             "SELECT id, created_at FROM ep_dev_messages WHERE logto_sub = ? ORDER BY id DESC LIMIT 1",
             [sub],
         ).rows[0]
-    return {"id": int(row[0]), "body": text, "created_at": str(row[1]), "author": "匿名" if anon else (nick or "听友")}
+    return {"id": int(row[0]), "body": text, "created_at": str(row[1]), "author": "匿名" if anon else (nick or DEFAULT_NICK)}
 
 
 def delete_dev_message(message_id: int) -> bool:
