@@ -8,6 +8,7 @@
   var boardData = null;
 
   function api(path, body) {
+    if (window.chenfuApi) return window.chenfuApi(path, body);
     var opt = { credentials: "same-origin", headers: { Accept: "application/json" } };
     if (body) {
       opt.method = "POST";
@@ -301,10 +302,7 @@
         return;
       }
       api("/api/ep/like", { song_id: sid }).then(function (j) {
-        if (j._status === 401) {
-          location.href = "/sign-in?return_to=" + encodeURIComponent(location.pathname + location.search);
-          return;
-        }
+        if (j._status >= 400) return;
         paintFlower(btn, j.likes, j.liked);
         if (boardData && boardData.songs) {
           boardData.songs.forEach(function (s) {
@@ -416,10 +414,6 @@
         body: body,
         rating: getRating("boardRate")
       }).then(function (j) {
-        if (j._status === 401) {
-          location.href = "/sign-in?return_to=" + encodeURIComponent(location.pathname + location.search);
-          return;
-        }
         if (j.detail && j._status >= 400) {
           hint.textContent = j.detail;
           return;
@@ -453,10 +447,6 @@
         return;
       }
       api("/api/ep/dev-message", { body: body }).then(function (j) {
-        if (j._status === 401) {
-          location.href = "/sign-in?return_to=" + encodeURIComponent(location.pathname + location.search);
-          return;
-        }
         if (j.detail && j._status >= 400) {
           hint.textContent = j.detail;
           return;

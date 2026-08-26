@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import os
+import re
 import uuid
-from typing import Union
+from typing import Any, Union
 from urllib.parse import quote
 
 from fastapi import FastAPI, Request
@@ -49,6 +50,8 @@ PUBLIC_PREFIXES = (
     "/icons/",
 )
 PUBLIC_GET_PREFIXES = ("/api/board",)
+SOCIAL_API_PREFIX = "/api/ep/"
+GUEST_KEY_RE = re.compile(r"^guest-[a-f0-9]{12}$")
 
 # 受保护：四曲章节、播放器、歌词卡、音频
 PROTECTED_PREFIXES = (
@@ -126,18 +129,40 @@ def current_sub(request: Request) -> str | None:
     return claims.sub if claims else None
 
 
-def current_actor(request: Request) -> str | None:
-    """登录用户；本地未强制登录时用会话访客，便于本机试留言仓。"""
+def parse_guest_key(raw: str | None) -> str | None:
+    if not raw:
+        return None
+    key = str(raw).strip()
+    return key if GUEST_KEY_RE.match(key) else None
+
+
+def current_actor(request: Request, guest_key: str | None = None) -> str:
+    """登录用户；否则用会话 + 客户端 guest_key 识别访客并写入后台。"""
     sub = current_sub(request)
     if sub:
         return sub
-    if not settings.auth_required or not auth_configured():
-        gid = request.session.get("guest_id")
-        if not gid:
-            gid = "guest-" + uuid.uuid4().hex[:12]
-            request.session["guest_id"] = gid
-        return str(gid)
-    return None
+    gid = parse_guest_key(guest_key) or parse_guest_key(request.session.get("guest_id"))
+    if not gid:
+        gid = "guest-" + uuid.uuid4().hex[:12]
+    request.session["guest_id"] = gid
+    return gid
+
+
+def ensure_actor_user(actor: str) -> None:
+    if not actor.startswith("guest-"):
+        return
+    try:
+        upsert_user(actor, None, "访客", None)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+async def read_json_body(request: Request) -> dict[str, Any]:
+    try:
+        data = await request.json()
+        return data if isinstance(data, dict) else {}
+    except Exception:  # noqa: BLE001
+        return {}
 
 
 def is_public_path(path: str) -> bool:
@@ -179,6 +204,8 @@ async def require_auth(request: Request, call_next):
     if is_public_path(path):
         return await call_next(request)
     if request.method in ("GET", "HEAD") and any(path.startswith(p) for p in PUBLIC_GET_PREFIXES):
+        return await call_next(request)
+    if path.startswith(SOCIAL_API_PREFIX) and request.method == "POST":
         return await call_next(request)
     if not settings.auth_required:
         return await call_next(request)
@@ -275,18 +302,28 @@ async def sign_out(request: Request):
 
 
 @app.get("/api/me")
-async def me(request: Request):
+async def me(request: Request, guest_key: str | None = None):
     sub = current_sub(request)
-    if not sub:
-        return {"authenticated": False, "auth_configured": auth_configured(), "auth_required": settings.auth_required}
-    client = logto_client(request)
-    claims = client.getIdTokenClaims()
+    if sub:
+        client = logto_client(request)
+        claims = client.getIdTokenClaims()
+        return {
+            "authenticated": True,
+            "sub": sub,
+            "email": getattr(claims, "email", None) if claims else None,
+            "phone": getattr(claims, "phone_number", None) if claims else None,
+            "name": getattr(claims, "name", None) if claims else None,
+            "auth_required": settings.auth_required,
+            "auth_configured": auth_configured(),
+            "guest": False,
+        }
+    actor = current_actor(request, guest_key)
+    ensure_actor_user(actor)
     return {
-        "authenticated": True,
-        "sub": sub,
-        "email": getattr(claims, "email", None) if claims else None,
-        "phone": getattr(claims, "phone_number", None) if claims else None,
-        "name": getattr(claims, "name", None) if claims else None,
+        "authenticated": False,
+        "guest": True,
+        "guest_id": actor,
+        "auth_configured": auth_configured(),
         "auth_required": settings.auth_required,
     }
 
@@ -296,8 +333,9 @@ def _json_error(exc: Exception, status: int = 400) -> JSONResponse:
 
 
 @app.get("/api/board")
-async def api_board(request: Request, song: str | None = None, section: str | None = None):
-    actor = current_actor(request)
+async def api_board(request: Request, song: str | None = None, section: str | None = None, guest_key: str | None = None):
+    actor = current_actor(request, guest_key)
+    ensure_actor_user(actor)
     sec = (section or "").strip().lower()
     try:
         body = board_payload(actor, song)
@@ -306,7 +344,8 @@ async def api_board(request: Request, song: str | None = None, section: str | No
     body["me"] = {
         "authenticated": bool(current_sub(request)),
         "actor": actor,
-        "guest": bool(actor and str(actor).startswith("guest-")),
+        "guest": bool(actor.startswith("guest-")),
+        "guest_id": actor if actor.startswith("guest-") else None,
         "auth_configured": auth_configured(),
         "auth_required": settings.auth_required,
         "feelings": list(FEELINGS),
@@ -321,10 +360,9 @@ async def api_board(request: Request, song: str | None = None, section: str | No
 
 @app.post("/api/ep/like")
 async def api_like(request: Request):
-    actor = current_actor(request)
-    if not actor:
-        return JSONResponse({"detail": "请先登录再点赞"}, status_code=401)
-    data = await request.json()
+    data = await read_json_body(request)
+    actor = current_actor(request, str(data.get("guest_key") or ""))
+    ensure_actor_user(actor)
     try:
         return toggle_like(actor, str(data.get("song_id") or ""))
     except ValueError as exc:
@@ -333,10 +371,9 @@ async def api_like(request: Request):
 
 @app.post("/api/ep/heart")
 async def api_heart(request: Request):
-    actor = current_actor(request)
-    if not actor:
-        return JSONResponse({"detail": "请先登录再标注爱心"}, status_code=401)
-    data = await request.json()
+    data = await read_json_body(request)
+    actor = current_actor(request, str(data.get("guest_key") or ""))
+    ensure_actor_user(actor)
     try:
         return toggle_heart(
             actor,
@@ -350,10 +387,9 @@ async def api_heart(request: Request):
 
 @app.post("/api/ep/play")
 async def api_play(request: Request):
-    actor = current_actor(request)
-    if not actor:
-        return JSONResponse({"detail": "未登录，完播不记入排行"}, status_code=401)
-    data = await request.json()
+    data = await read_json_body(request)
+    actor = current_actor(request, str(data.get("guest_key") or ""))
+    ensure_actor_user(actor)
     dur = data.get("duration_sec")
     try:
         dur_f = float(dur) if dur is not None and dur != "" else None
@@ -373,10 +409,9 @@ async def api_play(request: Request):
 
 @app.post("/api/ep/comment")
 async def api_comment(request: Request):
-    actor = current_actor(request)
-    if not actor:
-        return JSONResponse({"detail": "请先登录再留言"}, status_code=401)
-    data = await request.json()
+    data = await read_json_body(request)
+    actor = current_actor(request, str(data.get("guest_key") or ""))
+    ensure_actor_user(actor)
     sid = song_or_none(str(data.get("song_id") or "")) if data.get("song_id") else None
     feeling = str(data.get("feeling") or "").strip()
     if feeling and feeling not in FEELINGS:
@@ -393,10 +428,9 @@ async def api_comment(request: Request):
 
 @app.post("/api/ep/dev-message")
 async def api_dev_message(request: Request):
-    actor = current_actor(request)
-    if not actor:
-        return JSONResponse({"detail": "请先登录再留言"}, status_code=401)
-    data = await request.json()
+    data = await read_json_body(request)
+    actor = current_actor(request, str(data.get("guest_key") or ""))
+    ensure_actor_user(actor)
     try:
         item = add_dev_message(actor, str(data.get("body") or ""))
     except ValueError as exc:
