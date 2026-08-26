@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""《沉浮》EP · FastAPI：全站公开；未登录用会话访客写入留言仓。"""
+"""《沉浮》EP · FastAPI：听歌与社交公开；访客可点赞/爱心/留言/完播；仅管理员可删留言。"""
 from __future__ import annotations
 
 import os
@@ -233,6 +233,7 @@ async def require_auth(request: Request, call_next):
         return await call_next(request)
     if request.method in ("GET", "HEAD") and any(path.startswith(p) for p in PUBLIC_GET_PREFIXES):
         return await call_next(request)
+    # 点赞/爱心/留言/完播：游客与登录用户均可 POST（管理员删留言走 /api/ep/admin/）
     if path.startswith(SOCIAL_API_PREFIX) and request.method == "POST":
         return await call_next(request)
     if path.startswith(ADMIN_API_PREFIX):

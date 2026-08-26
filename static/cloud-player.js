@@ -23,7 +23,6 @@
   var maxRatio = 0;
   var lastFlush = 0;
   var hearts = {};
-  var canWrite = true;
   var loopOne = false;
 
   function newSessionKey() {
@@ -39,13 +38,31 @@
     lastFlush = 0;
   }
 
+  function guestKey() {
+    if (window.chenfuGuestKey) return window.chenfuGuestKey();
+    var k = localStorage.getItem("chenfu_guest");
+    if (k && /^guest-[a-f0-9]{12}$/.test(k)) return k;
+    var raw =
+      (window.crypto && crypto.randomUUID && crypto.randomUUID().replace(/-/g, "")) ||
+      Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2);
+    k = "guest-" + raw.slice(0, 12);
+    localStorage.setItem("chenfu_guest", k);
+    return k;
+  }
+
   function api(path, body) {
     if (window.chenfuApi) return window.chenfuApi(path, body);
+    var gk = guestKey();
     var opt = { credentials: "same-origin", headers: { Accept: "application/json" } };
     if (body) {
       opt.method = "POST";
       opt.headers["Content-Type"] = "application/json";
+      body = Object.assign({}, body, { guest_key: gk });
       opt.body = JSON.stringify(body);
+    } else if (path.indexOf("?") >= 0) {
+      path += "&guest_key=" + encodeURIComponent(gk);
+    } else {
+      path += "?guest_key=" + encodeURIComponent(gk);
     }
     return fetch(path, opt).then(function (r) {
       return r.json().then(function (j) {
@@ -299,7 +316,6 @@
   function loadSocial() {
     api("/api/board?song=" + encodeURIComponent(songId)).then(function (j) {
       if (!j || !j.songs) return;
-      canWrite = !(j.me && j.me.auth_required && !j.me.authenticated && j.me.auth_configured);
       var song = null;
       (j.songs || []).forEach(function (s) {
         if (s.id === songId) song = s;

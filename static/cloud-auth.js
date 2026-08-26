@@ -35,7 +35,7 @@
   };
 
   function needAuthLinks() {
-    return document.querySelectorAll("[data-need-auth], a[href*='player.html'], a.btn-pill[href*='_ep/']");
+    return document.querySelectorAll("[data-need-auth]");
   }
   window.chenfuApi("/api/me")
     .then(function (me) {
@@ -75,12 +75,6 @@
           location.href = "/sign-in?return_to=" + encodeURIComponent(to);
         });
       });
-      if (document.body.classList.contains("hub-page")) {
-        var bar = document.createElement("div");
-        bar.className = "hub-auth-banner is-on";
-        bar.innerHTML = "登录后可进入歌词卡听歌 · <a href='/sign-in'>去登录</a>";
-        document.body.appendChild(bar);
-      }
     })
     .catch(function () {});
 })();
