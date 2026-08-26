@@ -166,27 +166,46 @@
   }
 
   function ensureBar() {
-    if (document.querySelector(".cloud-song-bar")) return document.querySelector(".cloud-song-bar");
-    var h1 = document.querySelector(".player-panel .headline, .headline");
-    if (!h1) return null;
-    var bar = document.createElement("div");
-    bar.className = "cloud-song-bar";
-    bar.innerHTML =
-      '<button type="button" class="cloud-like" id="cloudLike"><span class="heart">♡</span><span class="lab">喜欢这首</span></button>' +
-      '<span class="cloud-song-meta" id="cloudSongMeta"></span>' +
-      '<a href="/board.html?song=' +
-      encodeURIComponent(songId) +
-      '">留言仓 ›</a>';
-    h1.insertAdjacentElement("afterend", bar);
-    bar.querySelector("#cloudLike").addEventListener("click", function () {
-      api("/api/ep/like", { song_id: songId })
-        .then(function (j) {
-          if (j._status >= 400) return;
-          paintLike(j.likes, j.liked);
-        })
-        .catch(function () {});
-    });
-    return bar;
+    var row = document.querySelector(".transport .row");
+    if (!row) return null;
+
+    var oldBar = document.querySelector(".cloud-song-bar");
+    if (oldBar) oldBar.remove();
+
+    var like = document.getElementById("cloudLike");
+    if (!like) {
+      like = document.createElement("button");
+      like.type = "button";
+      like.className = "cloud-like ghost";
+      like.id = "cloudLike";
+      like.innerHTML = '<span class="heart">♡</span><span class="lab">喜欢这首</span>';
+      like.addEventListener("click", function () {
+        api("/api/ep/like", { song_id: songId })
+          .then(function (j) {
+            if (j._status >= 400) return;
+            paintLike(j.likes, j.liked);
+          })
+          .catch(function () {});
+      });
+    }
+    if (like.parentNode !== row) {
+      var loop = document.getElementById("btnLoop");
+      if (loop && loop.parentNode === row) loop.insertAdjacentElement("afterend", like);
+      else row.appendChild(like);
+    }
+
+    var meta = document.getElementById("cloudSongMeta");
+    if (!meta) {
+      meta = document.createElement("span");
+      meta.className = "cloud-song-meta";
+      meta.id = "cloudSongMeta";
+    }
+    var transport = document.querySelector(".transport");
+    if (transport && meta.parentNode !== transport) {
+      row.insertAdjacentElement("afterend", meta);
+    }
+
+    return like;
   }
 
   function paintLike(likes, liked) {

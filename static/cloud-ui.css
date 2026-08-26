@@ -15,23 +15,20 @@
 .hub-auth-banner.is-on{display:flex}
 .hub-auth-banner a{color:#9fe8ff}
 
-/* 曲目点赞条 */
-.cloud-song-bar{
-  display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;
-  margin:10px 0 4px;font-size:14px;
-}
+/* 曲目点赞（控制条内，紧邻单曲循环） */
 .cloud-like{
   display:inline-flex;align-items:center;gap:6px;
-  padding:6px 14px;border-radius:999px;cursor:pointer;
-  border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.06);
+  padding:8px 14px;border-radius:999px;cursor:pointer;
+  border:1px solid rgba(255,255,255,.28);background:transparent;
   color:#fff;font:inherit;font-size:13px;letter-spacing:.04em;
 }
-.cloud-like:hover{background:rgba(255,255,255,.12)}
+.cloud-like:hover{background:rgba(255,255,255,.08)}
 .cloud-like.is-on{border-color:#ff6b8a;background:rgba(255,77,109,.22);color:#ffd0d8}
 .cloud-like .heart{font-size:15px;line-height:1}
-.cloud-song-meta{opacity:.62;font-size:12px}
-.cloud-song-bar a{color:#9fe8ff;text-decoration:none;font-size:13px}
-.cloud-song-bar a:hover{text-decoration:underline}
+.cloud-song-meta{
+  display:block;width:100%;margin-top:8px;
+  opacity:.62;font-size:12px;line-height:1.45;
+}
 
 /* 歌词行爱心：包在 lyric-line / sync-line 外侧，避免 button 套 button */
 .lyric-row{
@@ -426,7 +423,13 @@ body.board-page{
     font-size:12px;
     text-shadow:0 1px 8px rgba(0,0,0,.6);
   }
-  body.player-page .cloud-song-bar{margin:6px 0 2px}
+  body.player-page .cloud-song-meta{
+    margin-top:6px;font-size:11px;
+    text-shadow:0 1px 8px rgba(0,0,0,.6);
+  }
+  body.player-page .transport .row .cloud-like{
+    padding:8px 12px;font-size:13px;
+  }
   body.player-page .sync-lyrics{
     flex:1;
     min-height:0;
