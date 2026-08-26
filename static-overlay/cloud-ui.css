@@ -101,6 +101,21 @@ body.board-page{
   background:rgba(8,10,12,.82);
   backdrop-filter:saturate(180%) blur(20px);
 }
+.board-page .nav-inner{
+  max-width:1120px;margin:0 auto;height:48px;padding:0 22px;
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;color:#f5f7fa;
+}
+.board-page .nav-brand{
+  display:inline-flex;align-items:center;gap:8px;
+  color:#fff;text-decoration:none;font-weight:600;letter-spacing:.08em;
+  opacity:1;flex-shrink:0;
+}
+.board-page .nav-brand .brand-logo{width:22px;height:22px;display:block;flex-shrink:0}
+.board-page .nav-links{display:flex;gap:18px;align-items:center;min-width:0}
+.board-page .nav-links a{color:#f5f7fa;opacity:.8;text-decoration:none;white-space:nowrap}
+.board-page .nav-links a:hover{opacity:1;text-decoration:none}
+.board-page .nav-links a.is-on{opacity:1}
 .board-shell{
   max-width:1120px;margin:0 auto;padding:88px 22px 80px;
   display:grid;grid-template-columns:200px 1fr;gap:28px;
