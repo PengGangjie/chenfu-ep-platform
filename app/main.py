@@ -23,7 +23,6 @@ from .db import (
     clear_comment_rating,
     delete_comment,
     delete_dev_message,
-    list_dev_messages,
     ping_db,
     toggle_heart,
     toggle_like,
@@ -368,10 +367,18 @@ def _json_error(exc: Exception, status: int = 400) -> JSONResponse:
 @app.get("/api/board")
 async def api_board(request: Request, song: str | None = None, section: str | None = None, guest_key: str | None = None):
     actor = current_actor(request, guest_key)
-    ensure_actor_user(actor)
     sec = (section or "").strip().lower()
     try:
-        body = board_payload(actor, song)
+        if sec == "dev":
+            body = board_payload(
+                actor,
+                None,
+                with_comments=False,
+                with_popular=False,
+                with_dev_messages=True,
+            )
+        else:
+            body = board_payload(actor, song)
     except Exception as exc:  # noqa: BLE001
         return JSONResponse({"db": False, "detail": str(exc), "songs": list(SONGS), "ranking": [], "comments": [], "popular_lyrics": []}, status_code=200)
     body["me"] = {
@@ -388,7 +395,6 @@ async def api_board(request: Request, song: str | None = None, section: str | No
         body["section"] = "dev"
         body["carousel"] = list(CAROUSEL_IMAGES)
         body["announcements"] = list(DEV_ANNOUNCEMENTS)
-        body["dev_messages"] = list_dev_messages(50)
     return body
 
 

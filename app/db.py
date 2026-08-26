@@ -137,11 +137,18 @@ def using_turso() -> bool:
     return bool(settings.turso_database_url and settings.turso_auth_token)
 
 
+_schema_ready = False
+
+
 def ensure_schema() -> None:
+    global _schema_ready
+    if _schema_ready:
+        return
     with turso_client() as client:
         for stmt in SCHEMA_STATEMENTS:
             client.execute(stmt.strip())
         _migrate_columns(client)
+    _schema_ready = True
 
 
 def _migrate_columns(client) -> None:
@@ -181,14 +188,18 @@ def upsert_user(sub: str, email: str | None, name: str | None, phone: str | None
         )
 
 
-def _count_map(sql: str, params: list[Any] | None = None) -> dict[str, int]:
+def _count_map_client(client, sql: str, params: list[Any] | None = None) -> dict[str, int]:
     out: dict[str, int] = {}
-    with turso_client() as client:
-        for row in client.execute(sql, params or []).rows:
-            if row[0] is None:
-                continue
-            out[str(row[0])] = int(row[1] or 0)
+    for row in client.execute(sql, params or []).rows:
+        if row[0] is None:
+            continue
+        out[str(row[0])] = int(row[1] or 0)
     return out
+
+
+def _count_map(sql: str, params: list[Any] | None = None) -> dict[str, int]:
+    with turso_client() as client:
+        return _count_map_client(client, sql, params)
 
 
 def _user_liked_songs(sub: str) -> set[str]:
@@ -566,14 +577,26 @@ def list_dev_messages(limit: int = 50) -> list[dict[str, Any]]:
     ]
 
 
-def board_payload(sub: str | None, song_id: str | None = None) -> dict[str, Any]:
+def board_payload(
+    sub: str | None,
+    song_id: str | None = None,
+    *,
+    with_comments: bool = True,
+    with_popular: bool = True,
+    with_dev_messages: bool = False,
+    comments_limit: int = 50,
+    dev_messages_limit: int = 50,
+) -> dict[str, Any]:
+    """一次 Turso 连接拉齐排行与留言，避免多次远程往返。"""
     ensure_schema()
     sid = song_or_none(song_id) if song_id else None
-    likes = _count_map("SELECT song_id, COUNT(*) FROM ep_song_likes GROUP BY song_id")
-    hearts = _count_map("SELECT song_id, COUNT(*) FROM ep_lyric_hearts GROUP BY song_id")
-    comments_n = _count_map("SELECT COALESCE(song_id, 'ep'), COUNT(*) FROM ep_comments GROUP BY song_id")
-    play_rows: list[tuple[Any, ...]] = []
+    titles = {s["id"]: s["title"] for s in SONGS}
     with turso_client() as client:
+        likes = _count_map_client(client, "SELECT song_id, COUNT(*) FROM ep_song_likes GROUP BY song_id")
+        hearts = _count_map_client(client, "SELECT song_id, COUNT(*) FROM ep_lyric_hearts GROUP BY song_id")
+        comments_n = _count_map_client(
+            client, "SELECT COALESCE(song_id, 'ep'), COUNT(*) FROM ep_comments GROUP BY song_id"
+        )
         play_rows = client.execute(
             """
             SELECT song_id,
@@ -585,8 +608,110 @@ def board_payload(sub: str | None, song_id: str | None = None) -> dict[str, Any]
             """,
             [COMPLETE_RATIO],
         ).rows
-    play = {str(r[0]): {"listeners": int(r[1] or 0), "completes": int(r[2] or 0), "avg_ratio": float(r[3] or 0)} for r in play_rows}
-    liked = _user_liked_songs(sub) if sub else set()
+        liked: set[str] = set()
+        if sub:
+            liked = {
+                str(r[0])
+                for r in client.execute(
+                    "SELECT song_id FROM ep_song_likes WHERE logto_sub = ?",
+                    [sub],
+                ).rows
+            }
+        popular: list[dict[str, Any]] = []
+        if with_popular:
+            sql = """
+                SELECT song_id, line_key, MAX(lyric_text), COUNT(*) AS n
+                FROM ep_lyric_hearts
+            """
+            params: list[Any] = []
+            if sid:
+                sql += " WHERE song_id = ?"
+                params.append(sid)
+            sql += " GROUP BY song_id, line_key HAVING n > 0 ORDER BY n DESC LIMIT ?"
+            params.append(12)
+            popular = [
+                {
+                    "song_id": str(r[0]),
+                    "title": titles.get(str(r[0]), str(r[0])),
+                    "line_key": str(r[1]),
+                    "text": str(r[2] or ""),
+                    "count": int(r[3] or 0),
+                }
+                for r in client.execute(sql, params).rows
+            ]
+        comments: list[dict[str, Any]] = []
+        if with_comments:
+            csql = """
+                SELECT c.id, c.song_id, c.body, c.feeling, c.rating, c.created_at,
+                       c.logto_sub, u.name, u.email, c.display_name, c.is_anonymous
+                FROM ep_comments c
+                LEFT JOIN ep_users u ON u.logto_sub = c.logto_sub
+            """
+            cparams: list[Any] = []
+            if sid:
+                csql += " WHERE c.song_id = ?"
+                cparams.append(sid)
+            csql += " ORDER BY c.id DESC LIMIT ?"
+            cparams.append(comments_limit)
+            comments = [
+                {
+                    "id": int(r[0]),
+                    "song_id": r[1],
+                    "title": titles.get(str(r[1]), "整张 EP") if r[1] else "整张 EP",
+                    "body": str(r[2]),
+                    "feeling": r[3],
+                    "rating": int(r[4]) if r[4] is not None else None,
+                    "created_at": str(r[5]),
+                    "author": resolve_comment_author(r[9], r[10], r[7], r[8], str(r[6])),
+                }
+                for r in client.execute(csql, cparams).rows
+            ]
+        dev_messages: list[dict[str, Any]] = []
+        if with_dev_messages:
+            dev_messages = [
+                {
+                    "id": int(r[0]),
+                    "body": str(r[1]),
+                    "created_at": str(r[2]),
+                    "author": resolve_comment_author(r[6], r[7], r[4], r[5], str(r[3])),
+                }
+                for r in client.execute(
+                    """
+                    SELECT m.id, m.body, m.created_at, m.logto_sub, u.name, u.email, m.display_name, m.is_anonymous
+                    FROM ep_dev_messages m
+                    LEFT JOIN ep_users u ON u.logto_sub = m.logto_sub
+                    ORDER BY m.id DESC
+                    LIMIT ?
+                    """,
+                    [dev_messages_limit],
+                ).rows
+            ]
+        hearts_map: dict[str, dict[str, Any]] = {}
+        if sid:
+            mine_keys: set[str] = set()
+            if sub:
+                mine_keys = {
+                    str(r[0])
+                    for r in client.execute(
+                        "SELECT line_key FROM ep_lyric_hearts WHERE song_id = ? AND logto_sub = ?",
+                        [sid, sub],
+                    ).rows
+                }
+            for key, text, n in client.execute(
+                """
+                SELECT line_key, MAX(lyric_text), COUNT(*)
+                FROM ep_lyric_hearts
+                WHERE song_id = ?
+                GROUP BY line_key
+                """,
+                [sid],
+            ).rows:
+                k = str(key)
+                hearts_map[k] = {"count": int(n or 0), "mine": k in mine_keys, "text": str(text or "")}
+    play = {
+        str(r[0]): {"listeners": int(r[1] or 0), "completes": int(r[2] or 0), "avg_ratio": float(r[3] or 0)}
+        for r in play_rows
+    }
     songs_out = []
     for meta in SONGS:
         i = meta["id"]
@@ -622,12 +747,14 @@ def board_payload(sub: str | None, song_id: str | None = None) -> dict[str, Any]
         "backend": "turso" if using_turso() else "sqlite",
         "songs": songs_out,
         "ranking": ranked,
-        "popular_lyrics": popular_lyrics(12, sid),
-        "comments": list_comments(sid, 50),
+        "popular_lyrics": popular,
+        "comments": comments,
         "album_comments": comments_n.get("ep", 0),
         "complete_ratio": COMPLETE_RATIO,
     }
     if sid:
         payload["song_id"] = sid
-        payload["hearts_map"] = song_hearts(sid, sub)
+        payload["hearts_map"] = hearts_map
+    if with_dev_messages:
+        payload["dev_messages"] = dev_messages
     return payload

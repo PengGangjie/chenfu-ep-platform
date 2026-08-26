@@ -184,16 +184,21 @@ body.board-page{
   border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.28);
   color:#fff;font:inherit;resize:vertical;
 }
-.board-compose .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+.board-compose .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px;position:relative;z-index:2}
 .board-compose select,.board-compose button{
   font:inherit;font-size:13px;border-radius:999px;padding:7px 14px;
   border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;
 }
 .board-compose select{
   -webkit-appearance:menulist;appearance:menulist;
-  border-radius:10px;min-width:7em;color:#fff;
+  border-radius:10px;min-width:7em;max-width:100%;
+  color:#fff;cursor:pointer;position:relative;z-index:3;
+  pointer-events:auto;touch-action:manipulation;
 }
 .board-compose select option{background:#1a1f24;color:#fff}
+.board-loading{opacity:.55;animation:boardPulse 1.1s ease-in-out infinite alternate}
+@keyframes boardPulse{from{opacity:.35}to{opacity:.75}}
+.board-main{min-width:0}
 .board-compose button.primary{background:#c41e3a;border-color:#c41e3a;cursor:pointer}
 .comment-card{
   padding:16px 0;border-bottom:1px solid rgba(255,255,255,.06);

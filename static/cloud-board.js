@@ -12,6 +12,13 @@
   if (!root) return;
 
   var boardData = null;
+  var loadSeq = 0;
+  var CATALOG = [
+    { id: "bait", title: "饵", en: "Bait", num: "01", player: "/《饵》/饵_ep/player.html", pitch: "纯粹与占有。戏谑来时，用不回应握住主动权。" },
+    { id: "shark", title: "鲨鱼", en: "Shark", num: "02", player: "/《鲨鱼》/鲨鱼_EP_5.1/player.html", pitch: "明知鱼鳍即危险，仍一步步进。再浮向晨光。" },
+    { id: "sub", title: "潜水艇", en: "Submarine", num: "03", player: "/《潜水艇》/潜水艇_ep/player.html", pitch: "隔着潜望镜想上岸。岛屿忽远又忽近。" },
+    { id: "volcano", title: "火山群岛", en: "Volcanic Archipelago", num: "04", player: "/《火山群岛》/火山群岛_ep/player.html", pitch: "反传统叙事的人。听不懂就算了——正好。" }
+  ];
 
   function guestKey() {
     if (window.chenfuGuestKey) return window.chenfuGuestKey();
@@ -57,6 +64,40 @@
 
   function pct(n) {
     return Math.round((Number(n) || 0) * 100) + "%";
+  }
+
+  function songsForNav() {
+    return (boardData && boardData.songs && boardData.songs.length) ? boardData.songs : CATALOG;
+  }
+
+  function updateNavActive() {
+    document.querySelectorAll(".board-nav a[data-song], .board-nav a[data-section]").forEach(function (a) {
+      var sec = a.getAttribute("data-section") || "";
+      var sid = a.getAttribute("data-song") || "";
+      var isDev = sec === "dev";
+      var on = isDev ? section === "dev" : !section && sid === (song || "");
+      a.classList.toggle("is-on", on);
+    });
+  }
+
+  function ensureShell() {
+    if (document.getElementById("boardNav")) {
+      updateNavActive();
+      return;
+    }
+    root.innerHTML =
+      '<aside class="board-nav" id="boardNav">' +
+      navHtml(songsForNav()) +
+      '</aside><div class="board-main" id="boardMain"><p class="board-empty board-loading">加载中…</p></div>';
+    bindNav();
+  }
+
+  function renderNav(songs) {
+    var nav = document.getElementById("boardNav");
+    if (!nav) return;
+    nav.innerHTML = navHtml(songs);
+    bindNav();
+    updateNavActive();
   }
 
   function setView(nextSong, nextSection) {
@@ -635,41 +676,49 @@
   }
 
   function load() {
+    ensureShell();
+    updateNavActive();
+    var main = document.getElementById("boardMain");
+    if (main) main.innerHTML = '<p class="board-empty board-loading">加载中…</p>';
+    var seq = ++loadSeq;
     var q = [];
     if (section === "dev") q.push("section=dev");
     else if (song) q.push("song=" + encodeURIComponent(song));
-    api("/api/board" + (q.length ? "?" + q.join("&") : "")).then(function (j) {
-      boardData = j;
-      var songs = j.songs || [];
-      var hero = currentTitle(songs);
-      var ranking = j.ranking || songs;
-      root.innerHTML =
-        '<aside class="board-nav" id="boardNav">' +
-        navHtml(songs) +
-        "</aside>" +
-        '<div class="board-main">' +
-        '<header class="board-hero"><h1>' +
-        esc(hero.h) +
-        '</h1><p class="en">' +
-        esc(hero.en) +
-        "</p><p>" +
-        esc(hero.p) +
-        "</p></header>" +
-        (section === "dev" ? devMain(j, hero) : songMain(j, hero, songs, ranking)) +
-        "</div>";
-      if (section !== "dev") {
-        fillSongSel(songs);
-        bindCompose();
-        bindStars("boardRate");
-        syncFlowerFromSong("boardFlower", (document.getElementById("boardSongSel") || {}).value || song);
-      } else {
-        bindDevCompose();
-        startCarousel();
-      }
-      bindNav();
-      bindAdmin();
-    });
+    api("/api/board" + (q.length ? "?" + q.join("&") : ""))
+      .then(function (j) {
+        if (seq !== loadSeq) return;
+        boardData = j;
+        var songs = j.songs || CATALOG;
+        renderNav(songs);
+        var hero = currentTitle(songs);
+        var ranking = j.ranking || songs;
+        if (!main) return;
+        main.innerHTML =
+          '<header class="board-hero"><h1>' +
+          esc(hero.h) +
+          '</h1><p class="en">' +
+          esc(hero.en) +
+          "</p><p>" +
+          esc(hero.p) +
+          "</p></header>" +
+          (section === "dev" ? devMain(j, hero) : songMain(j, hero, songs, ranking));
+        if (section !== "dev") {
+          fillSongSel(songs);
+          bindCompose();
+          bindStars("boardRate");
+          syncFlowerFromSong("boardFlower", (document.getElementById("boardSongSel") || {}).value || song);
+        } else {
+          bindDevCompose();
+          startCarousel();
+        }
+        bindAdmin();
+      })
+      .catch(function () {
+        if (seq !== loadSeq || !main) return;
+        main.innerHTML = '<p class="board-empty">加载失败，请刷新页面重试。</p>';
+      });
   }
 
+  ensureShell();
   load();
 })();
