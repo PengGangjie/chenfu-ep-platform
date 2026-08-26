@@ -133,10 +133,12 @@
     });
     flatLines.forEach(function (item, fi) {
       item.el.addEventListener("click", function (e) {
+        if (e.target.closest(".lyric-heart")) return;
         e.stopPropagation();
         seekToLine(fi, true);
       });
     });
+    if (window.chenfuOnLyricsRendered) window.chenfuOnLyricsRendered();
   }
 
   function scaledCue(i) {
@@ -207,9 +209,7 @@
     applyGlow(cue.glow);
     syncMoodRail(i);
     var on = blocks[i];
-    if (on && on.scrollIntoView) {
-      on.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }
+    if (seek && on && on.scrollIntoView) on.scrollIntoView({ behavior: "smooth", block: "nearest" });
     if (seek && audio && isFinite(audio.duration)) {
       var target = Math.min(cue.start + 0.05, Math.max(0, audio.duration - 0.2));
       lockUntil = Date.now() + 1200;
@@ -310,7 +310,7 @@
     if (found !== idx) setActive(found, false);
     updateProgress(found, t);
     var fi = findLineAt(t);
-    if (fi !== lineIdx) highlightLine(fi, true);
+    if (fi !== lineIdx) highlightLine(fi, false);
   }
 
   function tick() {

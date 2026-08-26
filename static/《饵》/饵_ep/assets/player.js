@@ -63,6 +63,7 @@
     }).join("");
     syncRoot.querySelectorAll(".sync-line").forEach(function (el) {
       el.addEventListener("click", function (e) {
+        if (e.target.closest(".lyric-heart")) return;
         e.preventDefault();
         e.stopPropagation();
         var bi = +el.getAttribute("data-bi");
@@ -82,6 +83,7 @@
         seekToLine(bi, 0, true);
       });
     });
+    if (window.chenfuOnLyricsRendered) window.chenfuOnLyricsRendered();
   }
 
   function flatIndexOf(bi, li) {

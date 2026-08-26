@@ -24,6 +24,8 @@
   var lastFlush = 0;
   var hearts = {};
   var loopOne = false;
+  var lastHeartTap = 0;
+  var decorateScheduled = false;
 
   function newSessionKey() {
     return (
@@ -130,6 +132,9 @@
       ev.preventDefault();
       ev.stopPropagation();
       ev.stopImmediatePropagation();
+      var now = Date.now();
+      if (now - lastHeartTap < 320) return;
+      lastHeartTap = now;
       var key = btn.getAttribute("data-line-key");
       var row = btn.closest(".lyric-row");
       var lineEl = row && row.querySelector(".lyric-line, .sync-line");
@@ -137,16 +142,19 @@
       toggleHeartOptimistic(key, btn, lineEl);
     }
     root.addEventListener("click", onHeart, true);
-    root.addEventListener(
-      "touchend",
-      function (ev) {
-        if (!ev.target.closest(".lyric-heart")) return;
-        ev.preventDefault();
-        onHeart(ev);
-      },
-      { capture: true, passive: false }
-    );
   }
+
+  function scheduleDecorate() {
+    if (decorateScheduled) return;
+    decorateScheduled = true;
+    requestAnimationFrame(function () {
+      decorateScheduled = false;
+      decorateLines();
+      applyHeartsToDom();
+    });
+  }
+
+  window.chenfuOnLyricsRendered = scheduleDecorate;
 
   function deferIdle(fn) {
     if (window.requestIdleCallback) window.requestIdleCallback(fn, { timeout: 2500 });
@@ -223,7 +231,9 @@
   }
 
   function decorateLines() {
-    document.querySelectorAll(".lyric-line, .sync-line").forEach(function (el) {
+    var root = document.getElementById("syncLyrics");
+    if (!root) return;
+    root.querySelectorAll(".lyric-line, .sync-line").forEach(function (el) {
       if (el.closest(".lyric-row")) return;
       var wrap = document.createElement("div");
       wrap.className = "lyric-row";
@@ -430,11 +440,28 @@
     var now = Date.now();
     if (!force && now - lastFlush < 12000 && r < 0.9) return;
     lastFlush = now;
-    api("/api/ep/play", {
+    var payload = JSON.stringify({
       song_id: songId,
       session_key: sessionKey,
       max_ratio: maxRatio,
-      duration_sec: isFinite(audio.duration) ? audio.duration : null
+      duration_sec: isFinite(audio.duration) ? audio.duration : null,
+      guest_key: guestKey()
+    });
+    if (navigator.sendBeacon) {
+      try {
+        navigator.sendBeacon(
+          "/api/ep/play",
+          new Blob([payload], { type: "application/json" })
+        );
+        return;
+      } catch (e) {}
+    }
+    fetch("/api/ep/play", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: payload,
+      keepalive: true
     }).catch(function () {});
   }
 
@@ -478,30 +505,12 @@
     }, 15000);
   }
 
-  var lyrics = document.getElementById("syncLyrics");
-  if (lyrics && window.MutationObserver) {
-    var mo = new MutationObserver(function (mutations) {
-      var added = false;
-      for (var i = 0; i < mutations.length; i++) {
-        var m = mutations[i];
-        if (m.type === "childList" && m.addedNodes.length) {
-          added = true;
-          break;
-        }
-      }
-      if (!added) return;
-      decorateLines();
-      applyHeartsToDom();
-    });
-    mo.observe(lyrics, { childList: true, subtree: true });
-  }
-
   bindHeartDelegation();
   patchAudio();
   ensureBar();
   ensureLoopBtn();
   injectDock();
-  decorateLines();
+  scheduleDecorate();
   watchAudio();
   deferIdle(function () {
     loadSocial();
