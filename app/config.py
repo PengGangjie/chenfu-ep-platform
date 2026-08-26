@@ -52,7 +52,7 @@ def get_settings() -> Settings:
     return Settings(
         app_name="chenfu-ep",
         session_secret=os.getenv("SESSION_SECRET", "dev-change-me-chenfu-ep"),
-        auth_required=os.getenv("AUTH_REQUIRED", "true").lower() in {"1", "true", "yes"},
+        auth_required=os.getenv("AUTH_REQUIRED", "false").lower() in {"1", "true", "yes"},
         logto_endpoint=os.getenv("LOGTO_ENDPOINT", "").strip(),
         logto_app_id=os.getenv("LOGTO_APP_ID", "").strip(),
         logto_app_secret=os.getenv("LOGTO_APP_SECRET", "").strip(),

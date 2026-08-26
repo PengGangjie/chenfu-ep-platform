@@ -24,7 +24,7 @@
         return;
       }
       document.dispatchEvent(new CustomEvent("chenfu-auth", { detail: me }));
-      if (!me.auth_configured) return;
+      if (!me.auth_configured || !me.auth_required) return;
       needAuthLinks().forEach(function (a) {
         a.addEventListener("click", function (ev) {
           ev.preventDefault();

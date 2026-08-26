@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""《沉浮》EP · FastAPI：主页公开；播放页 / 歌词卡 / 音频需登录。"""
+"""《沉浮》EP · FastAPI：全站公开；未登录用会话访客写入留言仓。"""
 from __future__ import annotations
 
 import os
