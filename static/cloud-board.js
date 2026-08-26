@@ -1,7 +1,13 @@
 (function () {
   var params = new URLSearchParams(location.search);
   var song = params.get("song") || "";
-  var section = params.get("section") || "";
+  var sectionRaw = params.get("section");
+  var section = sectionRaw !== null ? sectionRaw : song ? "" : "dev";
+  if (sectionRaw === null && !song && section === "dev") {
+    var initUrl = new URL(location.href);
+    initUrl.searchParams.set("section", "dev");
+    history.replaceState({}, "", initUrl);
+  }
   var root = document.getElementById("boardApp");
   if (!root) return;
 
