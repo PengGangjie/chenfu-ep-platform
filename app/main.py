@@ -19,10 +19,12 @@ from .config import get_settings
 from .db import (
     add_comment,
     add_dev_message,
+    add_dev_reply,
     board_payload,
     clear_comment_rating,
     delete_comment,
     delete_dev_message,
+    delete_dev_reply,
     ping_db,
     player_social_payload,
     toggle_heart,
@@ -509,6 +511,33 @@ async def api_dev_message(request: Request):
         code = 429 if "稍后再" in str(exc) else 400
         return _json_error(exc, code)
     item["author"] = "你"
+    item["replies"] = []
+    return item
+
+
+@app.post("/api/ep/dev-reply")
+async def api_dev_reply(request: Request):
+    data = await read_json_body(request)
+    actor = current_actor(request, str(data.get("guest_key") or ""))
+    ensure_actor_user(actor)
+    parent = data.get("parent_reply_id")
+    try:
+        parent_id = int(parent) if parent not in (None, "") else None
+    except (TypeError, ValueError):
+        parent_id = None
+    try:
+        item = add_dev_reply(
+            actor,
+            int(data.get("message_id") or 0),
+            str(data.get("body") or ""),
+            parent_id,
+            str(data.get("display_name") or "").strip()[:24] or None,
+            bool(data.get("anonymous")),
+        )
+    except ValueError as exc:
+        code = 429 if "稍后再" in str(exc) else 400
+        return _json_error(exc, code)
+    item["author"] = "你"
     return item
 
 
@@ -537,6 +566,15 @@ async def admin_delete_dev_message(request: Request, message_id: int):
     if not delete_dev_message(message_id):
         return JSONResponse({"detail": "留言不存在"}, status_code=404)
     return {"ok": True, "id": message_id}
+
+
+@app.delete("/api/ep/admin/dev-reply/{reply_id}")
+async def admin_delete_dev_reply(request: Request, reply_id: int):
+    if not is_admin(request):
+        return JSONResponse({"detail": "需要管理员权限"}, status_code=403)
+    if not delete_dev_reply(reply_id):
+        return JSONResponse({"detail": "回复不存在"}, status_code=404)
+    return {"ok": True, "id": reply_id}
 
 
 static_dir = settings.static_dir

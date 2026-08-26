@@ -245,6 +245,31 @@ body.board-page{
   display:inline-flex;align-items:center;gap:6px;font-size:13px;opacity:.78;cursor:pointer;
 }
 .anon-check input{accent-color:#ffb060}
+.comment-card.dev-msg .body{opacity:.95}
+.dev-replies{margin:10px 0 0;padding-left:0;border-left:2px solid rgba(255,255,255,.08)}
+.dev-reply{padding:10px 0 10px 14px;border-top:1px solid rgba(255,255,255,.06)}
+.dev-reply--nested{margin-left:12px;padding-left:12px;border-left:1px solid rgba(255,255,255,.1)}
+.dev-reply .meta{font-size:11px}
+.dev-reply .body{font-size:14px;line-height:1.55;opacity:.88}
+.ghost-link{
+  border:0;background:transparent;color:#9fe8ff;font:inherit;font-size:13px;
+  cursor:pointer;padding:4px 0;margin-top:6px;
+}
+.ghost-link:hover{text-decoration:underline}
+.dev-reply-compose{
+  margin:10px 0;padding:12px;border-radius:12px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
+}
+.dev-reply-compose textarea{
+  width:100%;min-height:64px;resize:vertical;border-radius:10px;
+  border:1px solid rgba(255,255,255,.16);background:rgba(0,0,0,.28);
+  color:#fff;padding:10px 12px;font:inherit;font-size:14px;margin:8px 0;
+}
+.dev-reply-target{font-size:12px;opacity:.65;margin:0}
+.dev-reply-compose .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+.dev-reply-compose .primary{font:inherit;font-size:13px;border-radius:999px;padding:6px 14px;border:1px solid #c41e3a;background:#c41e3a;color:#fff;cursor:pointer}
+.dev-reply-hint{margin:6px 0 0;font-size:12px}
+
 .transport .row button.is-on,
 #btnLoop.is-on{
   border-color:rgba(159,232,255,.65);

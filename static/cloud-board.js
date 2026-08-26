@@ -252,6 +252,75 @@
     );
   }
 
+  function adminToolsDevReply(id) {
+    if (!isAdmin()) return "";
+    return (
+      '<button type="button" class="admin-btn admin-btn--danger" data-admin-del-dev-reply="' +
+      id +
+      '">删除</button>'
+    );
+  }
+
+  function devReplyHtml(r, messageId) {
+    var nested = r.parent_reply_id ? " dev-reply--nested" : "";
+    return (
+      '<div class="dev-reply' +
+      nested +
+      '" data-reply-id="' +
+      r.id +
+      '"><div class="meta"><span>' +
+      esc(r.author) +
+      "</span><span>" +
+      esc(String(r.created_at || "").replace("T", " ").slice(0, 16)) +
+      "</span>" +
+      adminToolsDevReply(r.id) +
+      '</div><div class="body">' +
+      esc(r.body) +
+      '</div><button type="button" class="dev-reply-btn ghost-link" data-reply-to="' +
+      r.id +
+      '" data-msg="' +
+      messageId +
+      '" data-author="' +
+      esc(r.author) +
+      '">回复</button></div>'
+    );
+  }
+
+  function devMessagesHtml(list) {
+    if (!list || !list.length) return '<p class="board-empty">还没有留言。Bug、建议、合作意向都欢迎，所有人可见。</p>';
+    return list
+      .map(function (m) {
+        var replies = (m.replies || []).map(function (r) {
+          return devReplyHtml(r, m.id);
+        }).join("");
+        return (
+          '<article class="comment-card dev-msg" data-id="' +
+          m.id +
+          '"><div class="meta"><span>' +
+          esc(m.author) +
+          "</span><span>" +
+          esc(String(m.created_at || "").replace("T", " ").slice(0, 16)) +
+          "</span>" +
+          adminToolsDev(m.id) +
+          '</div><div class="body">' +
+          esc(m.body) +
+          '</div><div class="dev-replies">' +
+          replies +
+          '</div><div class="dev-reply-compose" data-compose-for="' +
+          m.id +
+          '" hidden><p class="dev-reply-target"></p><textarea maxlength="500" placeholder="写下回复…"></textarea><div class="row">' +
+          nickRow("devR" + m.id) +
+          '<button type="button" class="primary dev-reply-send" data-msg="' +
+          m.id +
+          '">发送回复</button><button type="button" class="dev-reply-cancel">取消</button></div><p class="board-empty dev-reply-hint"></p></div>' +
+          '<button type="button" class="dev-reply-toggle ghost-link" data-msg="' +
+          m.id +
+          '">回复</button></article>'
+        );
+      })
+      .join("");
+  }
+
   function adminDelete(path) {
     return fetch(path, { method: "DELETE", credentials: "same-origin", headers: { Accept: "application/json" } }).then(
       function (r) {
@@ -300,25 +369,74 @@
       .join("");
   }
 
-  function devMessagesHtml(list) {
-    if (!list || !list.length) return '<p class="board-empty">还没有写给开发者的留言。Bug、建议、合作意向都欢迎。</p>';
-    return list
-      .map(function (m) {
-        return (
-          '<article class="comment-card dev-msg" data-id="' +
-          m.id +
-          '"><div class="meta"><span>' +
-          esc(m.author) +
-          "</span><span>" +
-          esc(String(m.created_at || "").replace("T", " ").slice(0, 16)) +
-          "</span>" +
-          adminToolsDev(m.id) +
-          '</div><div class="body">' +
-          esc(m.body) +
-          "</div></article>"
-        );
-      })
-      .join("");
+  function openDevReplyCompose(article, parentReplyId, replyAuthor) {
+    if (!article) return;
+    var box = article.querySelector(".dev-reply-compose");
+    if (!box) return;
+    box.hidden = false;
+    box.dataset.parentReplyId = parentReplyId || "";
+    var target = box.querySelector(".dev-reply-target");
+    if (target) {
+      target.textContent = parentReplyId && replyAuthor ? "回复 @" + replyAuthor : "回复这条留言";
+    }
+    var ta = box.querySelector("textarea");
+    if (ta) ta.focus();
+  }
+
+  function closeDevReplyCompose(box) {
+    if (!box) return;
+    box.hidden = true;
+    box.dataset.parentReplyId = "";
+    var ta = box.querySelector("textarea");
+    if (ta) ta.value = "";
+    var hint = box.querySelector(".dev-reply-hint");
+    if (hint) hint.textContent = "";
+  }
+
+  function bindDevReplies() {
+    document.querySelectorAll(".dev-reply-toggle").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var article = btn.closest(".dev-msg");
+        openDevReplyCompose(article, "", "");
+      });
+    });
+    document.querySelectorAll(".dev-reply-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var article = btn.closest(".dev-msg");
+        openDevReplyCompose(article, btn.getAttribute("data-reply-to"), btn.getAttribute("data-author"));
+      });
+    });
+    document.querySelectorAll(".dev-reply-cancel").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        closeDevReplyCompose(btn.closest(".dev-reply-compose"));
+      });
+    });
+    document.querySelectorAll(".dev-reply-send").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var article = btn.closest(".dev-msg");
+        var box = btn.closest(".dev-reply-compose");
+        if (!article || !box) return;
+        var ta = box.querySelector("textarea");
+        var body = (ta && ta.value || "").trim();
+        var hint = box.querySelector(".dev-reply-hint");
+        if (!body) {
+          if (hint) hint.textContent = "先写几句再发送。";
+          return;
+        }
+        var mid = Number(btn.getAttribute("data-msg") || article.getAttribute("data-id"));
+        var parentRaw = box.dataset.parentReplyId;
+        var payload = Object.assign({ message_id: mid, body: body }, readNickPayload("devR" + mid));
+        if (parentRaw) payload.parent_reply_id = Number(parentRaw);
+        api("/api/ep/dev-reply", payload).then(function (j) {
+          if (j._status >= 400) {
+            if (hint) hint.textContent = j.detail || "发送失败";
+            return;
+          }
+          closeDevReplyCompose(box);
+          load();
+        });
+      });
+    });
   }
 
   function carouselHtml(images, announcements) {
@@ -592,6 +710,14 @@
         });
       });
     });
+    document.querySelectorAll("[data-admin-del-dev-reply]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        if (!confirm("确定删除这条回复？")) return;
+        adminDelete("/api/ep/admin/dev-reply/" + btn.getAttribute("data-admin-del-dev-reply")).then(function () {
+          load();
+        });
+      });
+    });
   }
 
   function bindDevCompose() {
@@ -610,7 +736,7 @@
           return;
         }
         document.getElementById("devBody").value = "";
-        hint.textContent = "已发送，开发者会定期查看。";
+        hint.textContent = "已发送，所有人可见。";
         load();
       });
     });
@@ -634,7 +760,7 @@
       return {
         h: "写给开发者",
         en: "To Developer",
-        p: "Bug、建议、合作意向都欢迎。公告栏会轮播专辑封面，留言仅开发者可见回复入口。"
+        p: "Bug、建议、合作意向都欢迎。留言与回复所有人可见，可互相讨论。"
       };
     }
     if (!song) return { h: "留言仓", en: "Harbor", p: "四曲完播、点赞与歌词爱心都汇在这里。点歌名进播放页，句子右侧可以标♡。" };
@@ -653,7 +779,7 @@
       '<section class="board-compose dev-compose">' +
       devComposeHtml() +
       "</section>" +
-      '<section class="board-stream"><h2>听友留言</h2>' +
+      '<section class="board-stream"><h2>公开留言与回复</h2>' +
       devMessagesHtml(j.dev_messages) +
       "</section>"
     );
@@ -709,6 +835,7 @@
           syncFlowerFromSong("boardFlower", (document.getElementById("boardSongSel") || {}).value || song);
         } else {
           bindDevCompose();
+          bindDevReplies();
           startCarousel();
         }
         bindAdmin();

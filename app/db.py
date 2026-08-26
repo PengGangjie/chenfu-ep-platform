@@ -77,10 +77,23 @@ SCHEMA_STATEMENTS = (
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
     """,
+    """
+    CREATE TABLE IF NOT EXISTS ep_dev_replies (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      message_id INTEGER NOT NULL,
+      parent_reply_id INTEGER,
+      logto_sub TEXT NOT NULL,
+      body TEXT NOT NULL,
+      display_name TEXT,
+      is_anonymous INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+    """,
     "CREATE INDEX IF NOT EXISTS idx_ep_comments_song ON ep_comments(song_id, created_at DESC)",
     "CREATE INDEX IF NOT EXISTS idx_ep_plays_song ON ep_play_sessions(song_id)",
     "CREATE INDEX IF NOT EXISTS idx_ep_hearts_song ON ep_lyric_hearts(song_id)",
     "CREATE INDEX IF NOT EXISTS idx_ep_dev_messages_time ON ep_dev_messages(created_at DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_ep_dev_replies_msg ON ep_dev_replies(message_id, id ASC)",
 )
 
 
@@ -550,8 +563,116 @@ def delete_dev_message(message_id: int) -> bool:
         exists = client.execute("SELECT 1 FROM ep_dev_messages WHERE id = ?", [message_id]).rows
         if not exists:
             return False
+        client.execute("DELETE FROM ep_dev_replies WHERE message_id = ?", [message_id])
         client.execute("DELETE FROM ep_dev_messages WHERE id = ?", [message_id])
     return True
+
+
+def last_dev_reply_age_sec(sub: str) -> float | None:
+    with turso_client() as client:
+        rows = client.execute(
+            "SELECT (julianday('now') - julianday(created_at)) * 86400 FROM ep_dev_replies WHERE logto_sub = ? ORDER BY id DESC LIMIT 1",
+            [sub],
+        ).rows
+    if not rows or rows[0][0] is None:
+        return None
+    return float(rows[0][0])
+
+
+def add_dev_reply(
+    sub: str,
+    message_id: int,
+    body: str,
+    parent_reply_id: int | None = None,
+    guest_display_name: str | None = None,
+    anonymous: bool = False,
+) -> dict[str, Any]:
+    text = (body or "").strip()
+    if not text:
+        raise ValueError("请写下回复")
+    if len(text) > 500:
+        raise ValueError("回复请控制在 500 字内")
+    mid = int(message_id)
+    nick, anon = resolve_guest_nick(guest_display_name, anonymous)
+    ensure_schema()
+    with turso_client() as client:
+        msg = client.execute("SELECT 1 FROM ep_dev_messages WHERE id = ?", [mid]).rows
+        if not msg:
+            raise ValueError("留言不存在")
+        parent_id: int | None = None
+        if parent_reply_id is not None:
+            parent_id = int(parent_reply_id)
+            parent = client.execute(
+                "SELECT message_id FROM ep_dev_replies WHERE id = ?",
+                [parent_id],
+            ).rows
+            if not parent or int(parent[0][0]) != mid:
+                raise ValueError("回复目标不存在")
+        age = last_dev_reply_age_sec(sub)
+        if age is not None and age < 15:
+            raise ValueError("请稍后再回复")
+        client.execute(
+            """
+            INSERT INTO ep_dev_replies (message_id, parent_reply_id, logto_sub, body, display_name, is_anonymous)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            [mid, parent_id, sub, text, nick, anon],
+        )
+        row = client.execute(
+            "SELECT id, created_at FROM ep_dev_replies WHERE logto_sub = ? ORDER BY id DESC LIMIT 1",
+            [sub],
+        ).rows[0]
+    return {
+        "id": int(row[0]),
+        "message_id": mid,
+        "parent_reply_id": parent_id,
+        "body": text,
+        "created_at": str(row[1]),
+        "author": "匿名" if anon else (nick or DEFAULT_NICK),
+    }
+
+
+def delete_dev_reply(reply_id: int) -> bool:
+    ensure_schema()
+    with turso_client() as client:
+        exists = client.execute("SELECT 1 FROM ep_dev_replies WHERE id = ?", [reply_id]).rows
+        if not exists:
+            return False
+        client.execute("DELETE FROM ep_dev_replies WHERE id = ? OR parent_reply_id = ?", [reply_id, reply_id])
+    return True
+
+
+def _dev_reply_row(r: tuple[Any, ...]) -> dict[str, Any]:
+    return {
+        "id": int(r[0]),
+        "message_id": int(r[1]),
+        "parent_reply_id": int(r[2]) if r[2] is not None else None,
+        "body": str(r[3]),
+        "created_at": str(r[4]),
+        "author": resolve_comment_author(r[8], r[9], r[6], r[7], str(r[5])),
+    }
+
+
+def dev_replies_for_messages(client, message_ids: list[int]) -> dict[int, list[dict[str, Any]]]:
+    if not message_ids:
+        return {}
+    placeholders = ",".join("?" * len(message_ids))
+    rows = client.execute(
+        f"""
+        SELECT r.id, r.message_id, r.parent_reply_id, r.body, r.created_at,
+               r.logto_sub, u.name, u.email, r.display_name, r.is_anonymous
+        FROM ep_dev_replies r
+        LEFT JOIN ep_users u ON u.logto_sub = r.logto_sub
+        WHERE r.message_id IN ({placeholders})
+        ORDER BY r.id ASC
+        """,
+        message_ids,
+    ).rows
+    grouped: dict[int, list[dict[str, Any]]] = {mid: [] for mid in message_ids}
+    for r in rows:
+        item = _dev_reply_row(r)
+        grouped.setdefault(item["message_id"], []).append(item)
+    return grouped
 
 
 def list_dev_messages(limit: int = 50) -> list[dict[str, Any]]:
@@ -668,23 +789,27 @@ def board_payload(
             ]
         dev_messages: list[dict[str, Any]] = []
         if with_dev_messages:
+            dev_rows = client.execute(
+                """
+                SELECT m.id, m.body, m.created_at, m.logto_sub, u.name, u.email, m.display_name, m.is_anonymous
+                FROM ep_dev_messages m
+                LEFT JOIN ep_users u ON u.logto_sub = m.logto_sub
+                ORDER BY m.id DESC
+                LIMIT ?
+                """,
+                [dev_messages_limit],
+            ).rows
+            msg_ids = [int(r[0]) for r in dev_rows]
+            replies_map = dev_replies_for_messages(client, msg_ids)
             dev_messages = [
                 {
                     "id": int(r[0]),
                     "body": str(r[1]),
                     "created_at": str(r[2]),
                     "author": resolve_comment_author(r[6], r[7], r[4], r[5], str(r[3])),
+                    "replies": replies_map.get(int(r[0]), []),
                 }
-                for r in client.execute(
-                    """
-                    SELECT m.id, m.body, m.created_at, m.logto_sub, u.name, u.email, m.display_name, m.is_anonymous
-                    FROM ep_dev_messages m
-                    LEFT JOIN ep_users u ON u.logto_sub = m.logto_sub
-                    ORDER BY m.id DESC
-                    LIMIT ?
-                    """,
-                    [dev_messages_limit],
-                ).rows
+                for r in dev_rows
             ]
         hearts_map: dict[str, dict[str, Any]] = {}
         if sid:
