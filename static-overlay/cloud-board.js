@@ -344,7 +344,7 @@
   }
 
   function commentsHtml(list) {
-    if (!list || !list.length) return '<p class="board-empty">留言仓还是空的。听完一首，把看法留在这里。</p>';
+    if (!list || !list.length) return '<p class="board-empty">留言板还是空的。听完一首，把看法留在这里。</p>';
     return list
       .map(function (c) {
         var stars = c.rating ? '<span class="stars">' + "★".repeat(c.rating) + "</span>" : "";
@@ -599,7 +599,7 @@
       flowerHtml("boardFlower") +
       '<span class="rate-label">评分</span>' +
       starsHtml("boardRate") +
-      '<button type="button" class="primary" id="boardSend">写入留言仓</button>' +
+      '<button type="button" class="primary" id="boardSend">写入留言板</button>' +
       "</div>" +
       '<p class="board-empty" id="boardHint"></p>'
     );
@@ -655,7 +655,7 @@
       var body = (document.getElementById("boardBody").value || "").trim();
       var hint = document.getElementById("boardHint");
       if (!body) {
-        hint.textContent = "先写一句再送进留言仓。";
+        hint.textContent = "先写一句再送进留言板。";
         return;
       }
       api("/api/ep/comment", Object.assign({
@@ -763,9 +763,9 @@
         p: "Bug、建议、合作意向都欢迎。留言与回复所有人可见，可互相讨论。"
       };
     }
-    if (!song) return { h: "留言仓", en: "Harbor", p: "四曲完播、点赞与歌词爱心都汇在这里。点歌名进播放页，句子右侧可以标♡。" };
+    if (!song) return { h: "留言板", en: "Harbor", p: "四曲完播、点赞与歌词爱心都汇在这里。点歌名进播放页，句子右侧可以标♡。" };
     var s = (songs || []).filter(function (x) { return x.id === song; })[0];
-    if (!s) return { h: "留言仓", en: "Harbor", p: "" };
+    if (!s) return { h: "留言板", en: "Harbor", p: "" };
     return {
       h: s.title,
       en: s.en,

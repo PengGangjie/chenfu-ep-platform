@@ -1,4 +1,4 @@
-/* 《沉浮》EP 云端：登录条 + 留言仓 + 歌词爱心 */
+/* 《沉浮》EP 云端：登录条 + 留言板 + 歌词爱心 */
 .nav-login,.nav-logout{
   color:#fff;opacity:.9;text-decoration:none;font-size:.85rem;margin-left:.75rem;
   white-space:nowrap;flex-shrink:0;
@@ -92,7 +92,7 @@
 .flower-btn .glyph{font-size:16px;line-height:1}
 .flower-btn .n{font-size:12px;opacity:.75}
 
-/* —— 留言仓（导航仓） —— */
+/* —— 留言板（导航仓） —— */
 body.board-page{
   margin:0;background:#07090b;color:#f5f7fa;
   font-family:"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;
@@ -301,22 +301,39 @@ body.board-page{
     display:inline-flex !important;align-items:center;min-height:44px;
   }
 
-  /* —— 播放页：歌词卡全屏背景 + 追踪居中 —— */
+  /* —— 播放页：歌词卡全屏背景 + 仅歌词区滚动 —— */
+  html.player-immersive{
+    overflow:hidden;
+    height:100%;
+    overscroll-behavior:none;
+  }
   body.player-page{
     overflow:hidden;
     min-height:100dvh;
+    min-height:100svh;
+    overscroll-behavior:none;
+  }
+  body.player-page.player-immersive-mobile{
+    position:fixed;
+    inset:0;
+    width:100%;
+    touch-action:none;
   }
   body.player-page .foot{display:none}
   body.player-page .player-shell{
-    position:relative;
-    min-height:calc(100dvh - 48px);
+    position:fixed;
+    top:48px;
+    left:0;
+    right:0;
+    bottom:calc(58px + env(safe-area-inset-bottom, 0px));
+    min-height:0 !important;
     max-width:none;
     margin:0;
-    padding:0 0 calc(88px + env(safe-area-inset-bottom, 0px));
+    padding:0 !important;
     display:flex;
     flex-direction:column;
     gap:0;
-    justify-items:stretch;
+    overflow:hidden;
   }
   body.player-page .lyric-card-stage{
     position:fixed;
@@ -382,9 +399,11 @@ body.board-page{
     display:flex;
     flex-direction:column;
     min-height:0;
+    height:100%;
     width:100%;
     max-width:100%;
     padding:8px 14px 0;
+    overflow:hidden;
   }
   body.player-page .player-panel .eyebrow,
   body.player-page .player-panel .meta,
@@ -396,6 +415,7 @@ body.board-page{
   }
   body.player-page .transport{
     order:-1;
+    flex-shrink:0;
     margin-top:0;
     padding:10px 12px;
     background:rgba(0,0,0,.52);
@@ -419,6 +439,7 @@ body.board-page{
     flex-wrap:wrap;
   }
   body.player-page .now-playing{
+    flex-shrink:0;
     margin-top:8px;
     font-size:12px;
     text-shadow:0 1px 8px rgba(0,0,0,.6);
@@ -430,12 +451,16 @@ body.board-page{
   body.player-page .transport .row .cloud-like{
     padding:8px 12px;font-size:13px;
   }
+  body.player-page .cloud-player-note{display:none}
   body.player-page .sync-lyrics{
     flex:1;
     min-height:0;
     margin-top:6px;
     max-height:none;
     overflow-y:auto;
+    overflow-x:hidden;
+    overscroll-behavior:contain;
+    touch-action:pan-y;
     -webkit-overflow-scrolling:touch;
     padding:18vh 2px 24vh;
     scroll-behavior:smooth;

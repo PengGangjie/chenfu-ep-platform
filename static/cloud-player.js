@@ -17,6 +17,11 @@
   var songId = songIdFromPath();
   if (!songId || !document.querySelector(".player-page, #syncLyrics, #audio")) return;
 
+  document.documentElement.classList.add("player-immersive");
+  if (window.matchMedia("(max-width: 860px)").matches) {
+    document.body.classList.add("player-immersive-mobile");
+  }
+
   var sessionKey =
     (window.crypto && crypto.randomUUID && crypto.randomUUID()) ||
     String(Date.now()) + "-" + Math.random().toString(16).slice(2);
@@ -367,7 +372,7 @@
       flowerHtml("cloudNoteFlower") +
       '<span class="rate-label">评分</span>' +
       starsHtml("cloudNoteRate") +
-      '<button type="button" class="primary" id="cloudNoteSend">写入留言仓</button>' +
+      '<button type="button" class="primary" id="cloudNoteSend">写入留言板</button>' +
       "</div>" +
       '<p class="hint" id="cloudNoteHint">访客也会记入完播与排名。爱心点在歌词行右侧。</p>';
     root.insertAdjacentElement("afterend", box);
@@ -376,7 +381,7 @@
     document.getElementById("cloudNoteSend").addEventListener("click", function () {
       var body = (document.getElementById("cloudNoteBody").value || "").trim();
       if (!body) {
-        document.getElementById("cloudNoteHint").textContent = "先写一句再送进留言仓。";
+        document.getElementById("cloudNoteHint").textContent = "先写一句再送进留言板。";
         return;
       }
       var nick = (document.getElementById("cloudNoteNick").value || "").trim();
@@ -394,7 +399,7 @@
         }
         document.getElementById("cloudNoteBody").value = "";
         paintStars(document.getElementById("cloudNoteRate"), 0);
-        document.getElementById("cloudNoteHint").textContent = "已写入留言仓。";
+        document.getElementById("cloudNoteHint").textContent = "已写入留言板。";
       });
     });
   }
@@ -406,7 +411,7 @@
     a.className = "shark-seg__item";
     a.setAttribute("data-cloud-board", "1");
     a.href = "/board.html?song=" + encodeURIComponent(songId);
-    a.textContent = "留言仓";
+    a.textContent = "留言板";
     dock.appendChild(a);
   }
 
