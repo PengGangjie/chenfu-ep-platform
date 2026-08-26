@@ -26,6 +26,7 @@
   var canWrite = true;
 
   function api(path, body) {
+    if (window.chenfuApi) return window.chenfuApi(path, body);
     var opt = { credentials: "same-origin", headers: { Accept: "application/json" } };
     if (body) {
       opt.method = "POST";
@@ -60,10 +61,7 @@
     bar.querySelector("#cloudLike").addEventListener("click", function () {
       api("/api/ep/like", { song_id: songId })
         .then(function (j) {
-          if (j._status === 401) {
-            location.href = "/sign-in?return_to=" + encodeURIComponent(location.pathname);
-            return;
-          }
+          if (j._status >= 400) return;
           paintLike(j.likes, j.liked);
         })
         .catch(function () {});
@@ -132,10 +130,7 @@
           line_key: key,
           lyric_text: lineText(el)
         }).then(function (j) {
-          if (j._status === 401) {
-            location.href = "/sign-in?return_to=" + encodeURIComponent(location.pathname);
-            return;
-          }
+          if (j._status >= 400) return;
           hearts[key] = { count: j.count, mine: j.mine, text: lineText(el) };
           paintHeart(btn, hearts[key]);
         });
@@ -217,10 +212,7 @@
     if (!btn) return;
     btn.addEventListener("click", function () {
       api("/api/ep/like", { song_id: sid }).then(function (j) {
-        if (j._status === 401) {
-          location.href = "/sign-in?return_to=" + encodeURIComponent(location.pathname);
-          return;
-        }
+        if (j._status >= 400) return;
         paintFlower(btn, j.likes, j.liked);
       });
     });
@@ -257,10 +249,6 @@
         body: body,
         rating: getRating("cloudNoteRate")
       }).then(function (j) {
-        if (j._status === 401) {
-          location.href = "/sign-in?return_to=" + encodeURIComponent(location.pathname + location.hash);
-          return;
-        }
         if (j.detail && j._status >= 400) {
           document.getElementById("cloudNoteHint").textContent = j.detail;
           return;

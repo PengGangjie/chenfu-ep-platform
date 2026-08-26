@@ -3,7 +3,7 @@ window.EP_LYRIC_VERSIONS = {
   "v2fresh": {
     "id": "v2fresh",
     "label": "v2fresh",
-    "credit": "词 · PUMBAA彭八　·　曲 · 待定　·　Mandopop Ballad",
+    "credit": "词 · PUMBAA彭八　·　曲 · PUMBAA彭八　·　Mandopop Ballad",
     "audio": "assets/audio/饵_v2fresh_A.mp3",
     "alt": "assets/audio/饵_v2fresh_B.mp3",
     "baseDuration": 312.53,
@@ -520,7 +520,7 @@ window.EP_LYRIC_VERSIONS = {
   "v2cover": {
     "id": "v2cover",
     "label": "v2cover",
-    "credit": "词 · PUMBAA彭八　·　曲 · 待定　·　Mandopop Ballad",
+    "credit": "词 · PUMBAA彭八　·　曲 · PUMBAA彭八　·　Mandopop Ballad",
     "audio": "assets/audio/饵_v2cover_A.mp3",
     "alt": "assets/audio/饵_v2cover_B.mp3",
     "baseDuration": 368.45,

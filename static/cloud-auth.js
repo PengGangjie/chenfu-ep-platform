@@ -1,9 +1,43 @@
 (function () {
   function qs(id) { return document.getElementById(id); }
+
+  function guestKey() {
+    var k = localStorage.getItem("chenfu_guest");
+    if (k && /^guest-[a-f0-9]{12}$/.test(k)) return k;
+    var raw =
+      (window.crypto && crypto.randomUUID && crypto.randomUUID().replace(/-/g, "")) ||
+      Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2);
+    k = "guest-" + raw.slice(0, 12);
+    localStorage.setItem("chenfu_guest", k);
+    return k;
+  }
+
+  window.chenfuGuestKey = guestKey;
+  window.chenfuApi = function (path, body) {
+    var opt = { credentials: "same-origin", headers: { Accept: "application/json" } };
+    var gk = guestKey();
+    if (body) {
+      opt.method = "POST";
+      opt.headers["Content-Type"] = "application/json";
+      body = Object.assign({}, body, { guest_key: gk });
+      opt.body = JSON.stringify(body);
+    } else if (path.indexOf("?") >= 0) {
+      path += "&guest_key=" + encodeURIComponent(gk);
+    } else {
+      path += "?guest_key=" + encodeURIComponent(gk);
+    }
+    return fetch(path, opt).then(function (r) {
+      return r.json().then(function (j) {
+        j._status = r.status;
+        return j;
+      });
+    });
+  };
+
   function needAuthLinks() {
     return document.querySelectorAll("[data-need-auth], a[href*='player.html'], a.btn-pill[href*='_ep/']");
   }
-  fetch("/api/me", { credentials: "same-origin" })
+  window.chenfuApi("/api/me")
     .then(function (r) { return r.json(); })
     .then(function (me) {
       var login = qs("navLogin");
