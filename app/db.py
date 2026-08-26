@@ -65,9 +65,18 @@ SCHEMA_STATEMENTS = (
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
     """,
+    """
+    CREATE TABLE IF NOT EXISTS ep_dev_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      logto_sub TEXT NOT NULL,
+      body TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+    """,
     "CREATE INDEX IF NOT EXISTS idx_ep_comments_song ON ep_comments(song_id, created_at DESC)",
     "CREATE INDEX IF NOT EXISTS idx_ep_plays_song ON ep_play_sessions(song_id)",
     "CREATE INDEX IF NOT EXISTS idx_ep_hearts_song ON ep_lyric_hearts(song_id)",
+    "CREATE INDEX IF NOT EXISTS idx_ep_dev_messages_time ON ep_dev_messages(created_at DESC)",
 )
 
 
@@ -411,6 +420,62 @@ def list_comments(song_id: str | None, limit: int = 40) -> list[dict[str, Any]]:
             }
         )
     return out
+
+
+def last_dev_message_age_sec(sub: str) -> float | None:
+    with turso_client() as client:
+        rows = client.execute(
+            "SELECT (julianday('now') - julianday(created_at)) * 86400 FROM ep_dev_messages WHERE logto_sub = ? ORDER BY id DESC LIMIT 1",
+            [sub],
+        ).rows
+    if not rows or rows[0][0] is None:
+        return None
+    return float(rows[0][0])
+
+
+def add_dev_message(sub: str, body: str) -> dict[str, Any]:
+    text = (body or "").strip()
+    if not text:
+        raise ValueError("请写下留言")
+    if len(text) > 800:
+        raise ValueError("留言请控制在 800 字内")
+    ensure_schema()
+    age = last_dev_message_age_sec(sub)
+    if age is not None and age < 30:
+        raise ValueError("请稍后再留言")
+    with turso_client() as client:
+        client.execute(
+            "INSERT INTO ep_dev_messages (logto_sub, body) VALUES (?, ?)",
+            [sub, text],
+        )
+        row = client.execute(
+            "SELECT id, created_at FROM ep_dev_messages WHERE logto_sub = ? ORDER BY id DESC LIMIT 1",
+            [sub],
+        ).rows[0]
+    return {"id": int(row[0]), "body": text, "created_at": str(row[1])}
+
+
+def list_dev_messages(limit: int = 50) -> list[dict[str, Any]]:
+    with turso_client() as client:
+        rows = client.execute(
+            """
+            SELECT m.id, m.body, m.created_at, m.logto_sub, u.name, u.email
+            FROM ep_dev_messages m
+            LEFT JOIN ep_users u ON u.logto_sub = m.logto_sub
+            ORDER BY m.id DESC
+            LIMIT ?
+            """,
+            [limit],
+        ).rows
+    return [
+        {
+            "id": int(r[0]),
+            "body": str(r[1]),
+            "created_at": str(r[2]),
+            "author": display_name(r[4], r[5], str(r[3])),
+        }
+        for r in rows
+    ]
 
 
 def board_payload(sub: str | None, song_id: str | None = None) -> dict[str, Any]:

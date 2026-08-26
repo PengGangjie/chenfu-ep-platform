@@ -194,6 +194,38 @@
     return v > 0 ? v : null;
   }
 
+  function flowerHtml(id) {
+    return (
+      '<button type="button" class="flower-btn" id="' +
+      id +
+      '" aria-pressed="false" title="送花（计入点赞）">' +
+      '<span class="glyph">🌸</span><span class="lab">送花</span><span class="n"></span></button>'
+    );
+  }
+
+  function paintFlower(btn, likes, liked) {
+    if (!btn) return;
+    btn.classList.toggle("is-on", !!liked);
+    btn.setAttribute("aria-pressed", liked ? "true" : "false");
+    var n = btn.querySelector(".n");
+    if (n) n.textContent = likes > 0 ? " · " + likes : "";
+    btn.querySelector(".lab").textContent = liked ? "已送花" : "送花";
+  }
+
+  function bindFlower(btnId, sid) {
+    var btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      api("/api/ep/like", { song_id: sid }).then(function (j) {
+        if (j._status === 401) {
+          location.href = "/sign-in?return_to=" + encodeURIComponent(location.pathname);
+          return;
+        }
+        paintFlower(btn, j.likes, j.liked);
+      });
+    });
+  }
+
   function ensureComposer() {
     if (document.getElementById("cloudNote")) return;
     var root = document.getElementById("syncLyrics") || document.querySelector(".player-panel");
@@ -205,6 +237,7 @@
       "<label>听完想说</label>" +
       '<textarea id="cloudNoteBody" maxlength="800" placeholder="某句歌词、或想留给下一位听友的话"></textarea>' +
       '<div class="row">' +
+      flowerHtml("cloudNoteFlower") +
       '<span class="rate-label">评分</span>' +
       starsHtml("cloudNoteRate") +
       '<button type="button" class="primary" id="cloudNoteSend">写入留言仓</button>' +
@@ -212,6 +245,7 @@
       '<p class="hint" id="cloudNoteHint">登录后会记入完播与排名。爱心点在歌词行右侧。</p>';
     root.insertAdjacentElement("afterend", box);
     bindStars("cloudNoteRate");
+    bindFlower("cloudNoteFlower", songId);
     document.getElementById("cloudNoteSend").addEventListener("click", function () {
       var body = (document.getElementById("cloudNoteBody").value || "").trim();
       if (!body) {
@@ -261,6 +295,7 @@
       if (song) {
         paintLike(song.likes, song.liked);
         paintMeta(song);
+        paintFlower(document.getElementById("cloudNoteFlower"), song.likes, song.liked);
       }
       hearts = j.hearts_map || {};
       decorateLines();

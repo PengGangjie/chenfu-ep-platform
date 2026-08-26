@@ -13,11 +13,13 @@ from fastapi.staticfiles import StaticFiles
 from logto import LogtoClient, LogtoConfig, Storage, UserInfoScope
 from starlette.middleware.sessions import SessionMiddleware
 
-from .catalog import FEELINGS, SONGS, song_or_none
+from .catalog import CAROUSEL_IMAGES, DEV_ANNOUNCEMENTS, FEELINGS, SONGS, song_or_none
 from .config import get_settings
 from .db import (
     add_comment,
+    add_dev_message,
     board_payload,
+    list_dev_messages,
     ping_db,
     toggle_heart,
     toggle_like,
@@ -294,8 +296,9 @@ def _json_error(exc: Exception, status: int = 400) -> JSONResponse:
 
 
 @app.get("/api/board")
-async def api_board(request: Request, song: str | None = None):
+async def api_board(request: Request, song: str | None = None, section: str | None = None):
     actor = current_actor(request)
+    sec = (section or "").strip().lower()
     try:
         body = board_payload(actor, song)
     except Exception as exc:  # noqa: BLE001
@@ -308,6 +311,11 @@ async def api_board(request: Request, song: str | None = None):
         "auth_required": settings.auth_required,
         "feelings": list(FEELINGS),
     }
+    if sec == "dev":
+        body["section"] = "dev"
+        body["carousel"] = list(CAROUSEL_IMAGES)
+        body["announcements"] = list(DEV_ANNOUNCEMENTS)
+        body["dev_messages"] = list_dev_messages(50)
     return body
 
 
@@ -376,6 +384,21 @@ async def api_comment(request: Request):
     rating = data.get("rating")
     try:
         item = add_comment(actor, sid, str(data.get("body") or ""), feeling, rating)
+    except ValueError as exc:
+        code = 429 if "稍后再" in str(exc) else 400
+        return _json_error(exc, code)
+    item["author"] = "你"
+    return item
+
+
+@app.post("/api/ep/dev-message")
+async def api_dev_message(request: Request):
+    actor = current_actor(request)
+    if not actor:
+        return JSONResponse({"detail": "请先登录再留言"}, status_code=401)
+    data = await request.json()
+    try:
+        item = add_dev_message(actor, str(data.get("body") or ""))
     except ValueError as exc:
         code = 429 if "稍后再" in str(exc) else 400
         return _json_error(exc, code)

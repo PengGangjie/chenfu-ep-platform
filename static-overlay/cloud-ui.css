@@ -78,6 +78,18 @@
 }
 .rate-star.is-on,.rate-star:hover{color:#ffb060}
 
+/* 送花按钮 */
+.flower-btn{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:6px 12px;border-radius:999px;cursor:pointer;
+  border:1px solid rgba(255,182,193,.35);background:rgba(255,182,193,.08);
+  color:#ffc8d4;font:inherit;font-size:13px;
+}
+.flower-btn:hover{background:rgba(255,182,193,.16)}
+.flower-btn.is-on{border-color:#ff8fab;background:rgba(255,105,135,.22);color:#ffd6e0}
+.flower-btn .glyph{font-size:16px;line-height:1}
+.flower-btn .n{font-size:12px;opacity:.75}
+
 /* —— 留言仓（导航仓） —— */
 body.board-page{
   margin:0;background:#07090b;color:#f5f7fa;
@@ -170,6 +182,32 @@ body.board-page{
 .comment-card .body{line-height:1.65;font-size:15px;white-space:pre-wrap}
 .board-empty{opacity:.5;padding:12px 0}
 .stars{letter-spacing:.08em;color:#ffb060}
+
+/* 写给开发者 */
+.dev-announce{margin:0 0 28px}
+.dev-carousel{
+  position:relative;border-radius:16px;overflow:hidden;
+  aspect-ratio:16/9;max-height:320px;background:#111;
+  border:1px solid rgba(255,255,255,.08);
+}
+.dev-carousel-slide{
+  position:absolute;inset:0;opacity:0;transition:opacity .8s ease;
+  pointer-events:none;
+}
+.dev-carousel-slide.is-on{opacity:1;pointer-events:auto}
+.dev-carousel-slide img{width:100%;height:100%;object-fit:cover;display:block}
+.dev-carousel-slide .cap{
+  position:absolute;left:0;right:0;bottom:0;padding:14px 16px;
+  background:linear-gradient(transparent,rgba(0,0,0,.72));
+  display:flex;flex-direction:column;gap:2px;
+}
+.dev-carousel-slide .cap strong{font-size:16px;letter-spacing:.06em}
+.dev-carousel-slide .cap span{font-size:12px;opacity:.75}
+.dev-notes{
+  margin:12px 0 0;padding:0 0 0 18px;line-height:1.7;font-size:14px;opacity:.72;
+}
+.dev-compose{margin-bottom:28px}
+.comment-card.dev-msg .body{opacity:.92}
 
 @media (max-width: 860px){
   .nav-user{display:none !important}

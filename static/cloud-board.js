@@ -1,8 +1,11 @@
 (function () {
   var params = new URLSearchParams(location.search);
   var song = params.get("song") || "";
+  var section = params.get("section") || "";
   var root = document.getElementById("boardApp");
   if (!root) return;
+
+  var boardData = null;
 
   function api(path, body) {
     var opt = { credentials: "same-origin", headers: { Accept: "application/json" } };
@@ -31,28 +34,35 @@
     return Math.round((Number(n) || 0) * 100) + "%";
   }
 
-  function setSong(id) {
-    song = id || "";
+  function setView(nextSong, nextSection) {
+    song = nextSong || "";
+    section = nextSection || "";
     var u = new URL(location.href);
     if (song) u.searchParams.set("song", song);
     else u.searchParams.delete("song");
+    if (section) u.searchParams.set("section", section);
+    else u.searchParams.delete("section");
     history.replaceState({}, "", u);
     load();
   }
 
   function navHtml(songs) {
-    var items = [{ id: "", title: "总览" }].concat(songs || []);
+    var items = [{ id: "", title: "总览", num: "" }].concat(songs || []);
+    items.push({ id: "dev", title: "写给开发者", num: "05" });
     return (
       '<p class="eyebrow">导航仓</p>' +
       items
         .map(function (s) {
-          var on = (s.id || "") === (song || "") ? " is-on" : "";
+          var isDev = s.id === "dev";
+          var on = isDev ? section === "dev" : !section && (s.id || "") === (song || "");
           var rank = s.num ? '<span class="rank-dot">' + s.num + "</span>" : "";
           return (
             '<a href="#" data-song="' +
-            esc(s.id || "") +
+            esc(isDev ? "" : s.id || "") +
+            '" data-section="' +
+            (isDev ? "dev" : "") +
             '" class="' +
-            on.trim() +
+            (on ? "is-on" : "") +
             '">' +
             rank +
             esc(s.title) +
@@ -146,6 +156,64 @@
       .join("");
   }
 
+  function devMessagesHtml(list) {
+    if (!list || !list.length) return '<p class="board-empty">还没有写给开发者的留言。Bug、建议、合作意向都欢迎。</p>';
+    return list
+      .map(function (m) {
+        return (
+          '<article class="comment-card dev-msg"><div class="meta"><span>' +
+          esc(m.author) +
+          "</span><span>" +
+          esc(String(m.created_at || "").replace("T", " ").slice(0, 16)) +
+          '</span></div><div class="body">' +
+          esc(m.body) +
+          "</div></article>"
+        );
+      })
+      .join("");
+  }
+
+  function carouselHtml(images, announcements) {
+    var imgs = (images || []).slice();
+    if (imgs.length > 1) {
+      var i = Math.floor(Math.random() * imgs.length);
+      imgs = imgs.slice(i).concat(imgs.slice(0, i));
+    }
+    var slides = imgs
+      .map(function (img, idx) {
+        return (
+          '<div class="dev-carousel-slide' +
+          (idx === 0 ? " is-on" : "") +
+          '">' +
+          '<img src="' +
+          esc(img.src) +
+          '" alt="' +
+          esc(img.title) +
+          '" loading="lazy"/>' +
+          '<div class="cap"><strong>' +
+          esc(img.title) +
+          "</strong><span>" +
+          esc(img.caption) +
+          "</span></div></div>"
+        );
+      })
+      .join("");
+    var notes = (announcements || [])
+      .map(function (t) {
+        return "<li>" + esc(t) + "</li>";
+      })
+      .join("");
+    return (
+      '<section class="dev-announce">' +
+      "<h2>公告栏</h2>" +
+      '<div class="dev-carousel" id="devCarousel">' +
+      slides +
+      "</div>" +
+      (notes ? '<ul class="dev-notes">' + notes + "</ul>" : "") +
+      "</section>"
+    );
+  }
+
   function starsHtml(id) {
     return (
       '<div class="rate-stars" id="' +
@@ -166,6 +234,15 @@
     );
   }
 
+  function flowerHtml(id) {
+    return (
+      '<button type="button" class="flower-btn" id="' +
+      id +
+      '" aria-pressed="false" title="送花（计入点赞）">' +
+      '<span class="glyph">🌸</span><span class="lab">送花</span><span class="n"></span></button>'
+    );
+  }
+
   function paintStars(el, value) {
     if (!el) return;
     el.setAttribute("data-value", String(value || 0));
@@ -175,6 +252,15 @@
       btn.classList.toggle("is-on", on);
       btn.textContent = on ? "★" : "☆";
     });
+  }
+
+  function paintFlower(btn, likes, liked) {
+    if (!btn) return;
+    btn.classList.toggle("is-on", !!liked);
+    btn.setAttribute("aria-pressed", liked ? "true" : "false");
+    var n = btn.querySelector(".n");
+    if (n) n.textContent = likes > 0 ? " · " + likes : "";
+    btn.querySelector(".lab").textContent = liked ? "已送花" : "送花";
   }
 
   function bindStars(id) {
@@ -196,6 +282,50 @@
     return v > 0 ? v : null;
   }
 
+  function songMeta(songs, sid) {
+    if (!sid) return null;
+    for (var i = 0; i < (songs || []).length; i++) {
+      if (songs[i].id === sid) return songs[i];
+    }
+    return null;
+  }
+
+  function bindFlower(btnId, getSongId) {
+    var btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      var sid = getSongId();
+      if (!sid) {
+        var hint = document.getElementById("boardHint") || document.getElementById("cloudNoteHint");
+        if (hint) hint.textContent = "请先选择一首曲目再送花。";
+        return;
+      }
+      api("/api/ep/like", { song_id: sid }).then(function (j) {
+        if (j._status === 401) {
+          location.href = "/sign-in?return_to=" + encodeURIComponent(location.pathname + location.search);
+          return;
+        }
+        paintFlower(btn, j.likes, j.liked);
+        if (boardData && boardData.songs) {
+          boardData.songs.forEach(function (s) {
+            if (s.id === sid) {
+              s.likes = j.likes;
+              s.liked = j.liked;
+            }
+          });
+        }
+      });
+    });
+  }
+
+  function syncFlowerFromSong(btnId, sid) {
+    var btn = document.getElementById(btnId);
+    if (!btn || !boardData) return;
+    var meta = songMeta(boardData.songs, sid || song);
+    if (meta) paintFlower(btn, meta.likes, meta.liked);
+    else paintFlower(btn, 0, false);
+  }
+
   function composeHtml(me) {
     var needLogin = me && me.auth_configured && me.auth_required && !me.authenticated;
     var lock = needLogin
@@ -209,6 +339,7 @@
       "></textarea>" +
       '<div class="row">' +
       '<select id="boardSongSel"></select>' +
+      flowerHtml("boardFlower") +
       '<span class="rate-label">评分</span>' +
       starsHtml("boardRate") +
       '<button type="button" class="primary" id="boardSend"' +
@@ -216,6 +347,26 @@
       ">写入留言仓</button>" +
       "</div>" +
       '<p class="board-empty" id="boardHint"></p>'
+    );
+  }
+
+  function devComposeHtml(me) {
+    var needLogin = me && me.auth_configured && me.auth_required && !me.authenticated;
+    var lock = needLogin
+      ? '<p class="board-empty">登录后才能留言。<a href="/sign-in?return_to=/board.html?section=dev">去登录</a></p>'
+      : "";
+    return (
+      "<h2>写给开发者</h2>" +
+      lock +
+      '<textarea id="devBody" maxlength="800" placeholder="Bug、建议、合作意向、或任何想直接说的话。" ' +
+      (needLogin ? "disabled" : "") +
+      "></textarea>" +
+      '<div class="row">' +
+      '<button type="button" class="primary" id="devSend"' +
+      (needLogin ? " disabled" : "") +
+      ">发送留言</button>" +
+      "</div>" +
+      '<p class="board-empty" id="devHint"></p>'
     );
   }
 
@@ -240,10 +391,12 @@
   }
 
   function bindNav() {
-    document.querySelectorAll(".board-nav a[data-song]").forEach(function (a) {
+    document.querySelectorAll(".board-nav a[data-song], .board-nav a[data-section]").forEach(function (a) {
       a.addEventListener("click", function (ev) {
         ev.preventDefault();
-        setSong(a.getAttribute("data-song") || "");
+        var sec = a.getAttribute("data-section") || "";
+        if (sec === "dev") setView("", "dev");
+        else setView(a.getAttribute("data-song") || "", "");
       });
     });
   }
@@ -277,9 +430,65 @@
         load();
       });
     });
+    var sel = document.getElementById("boardSongSel");
+    if (sel) {
+      sel.addEventListener("change", function () {
+        syncFlowerFromSong("boardFlower", sel.value || song);
+      });
+    }
+    bindFlower("boardFlower", function () {
+      var sel2 = document.getElementById("boardSongSel");
+      return (sel2 && sel2.value) || song;
+    });
+  }
+
+  function bindDevCompose() {
+    var btn = document.getElementById("devSend");
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      var body = (document.getElementById("devBody").value || "").trim();
+      var hint = document.getElementById("devHint");
+      if (!body) {
+        hint.textContent = "先写一句再发送。";
+        return;
+      }
+      api("/api/ep/dev-message", { body: body }).then(function (j) {
+        if (j._status === 401) {
+          location.href = "/sign-in?return_to=" + encodeURIComponent(location.pathname + location.search);
+          return;
+        }
+        if (j.detail && j._status >= 400) {
+          hint.textContent = j.detail;
+          return;
+        }
+        document.getElementById("devBody").value = "";
+        hint.textContent = "已发送，开发者会定期查看。";
+        load();
+      });
+    });
+  }
+
+  function startCarousel() {
+    var box = document.getElementById("devCarousel");
+    if (!box) return;
+    var slides = box.querySelectorAll(".dev-carousel-slide");
+    if (slides.length < 2) return;
+    var idx = 0;
+    setInterval(function () {
+      slides[idx].classList.remove("is-on");
+      idx = (idx + 1) % slides.length;
+      slides[idx].classList.add("is-on");
+    }, 4500);
   }
 
   function currentTitle(songs) {
+    if (section === "dev") {
+      return {
+        h: "写给开发者",
+        en: "To Developer",
+        p: "Bug、建议、合作意向都欢迎。公告栏会轮播专辑封面，留言仅开发者可见回复入口。"
+      };
+    }
     if (!song) return { h: "留言仓", en: "Harbor", p: "四曲完播、点赞与歌词爱心都汇在这里。点歌名进播放页，句子右侧可以标♡。" };
     var s = (songs || []).filter(function (x) { return x.id === song; })[0];
     if (!s) return { h: "留言仓", en: "Harbor", p: "" };
@@ -290,9 +499,40 @@
     };
   }
 
+  function devMain(j, hero) {
+    return (
+      carouselHtml(j.carousel, j.announcements) +
+      '<section class="board-compose dev-compose">' +
+      devComposeHtml(j.me) +
+      "</section>" +
+      '<section class="board-stream"><h2>听友留言</h2>' +
+      devMessagesHtml(j.dev_messages) +
+      "</section>"
+    );
+  }
+
+  function songMain(j, hero, songs, ranking) {
+    return (
+      (song ? "" : rankCards(ranking)) +
+      (song ? rankCards((ranking || []).filter(function (s) { return s.id === song; })) : "") +
+      '<section class="lyric-hot"><h2>热门歌词爱心</h2>' +
+      hotHtml(j.popular_lyrics) +
+      "</section>" +
+      '<section class="board-compose" id="boardCompose">' +
+      composeHtml(j.me) +
+      "</section>" +
+      '<section class="board-stream"><h2>听友看法</h2>' +
+      commentsHtml(j.comments) +
+      "</section>"
+    );
+  }
+
   function load() {
-    var q = song ? "?song=" + encodeURIComponent(song) : "";
-    api("/api/board" + q).then(function (j) {
+    var q = [];
+    if (section === "dev") q.push("section=dev");
+    else if (song) q.push("song=" + encodeURIComponent(song));
+    api("/api/board" + (q.length ? "?" + q.join("&") : "")).then(function (j) {
+      boardData = j;
       var songs = j.songs || [];
       var hero = currentTitle(songs);
       var ranking = j.ranking || songs;
@@ -308,23 +548,18 @@
         "</p><p>" +
         esc(hero.p) +
         "</p></header>" +
-        (song ? "" : rankCards(ranking)) +
-        (song
-          ? rankCards((ranking || []).filter(function (s) { return s.id === song; }))
-          : "") +
-        '<section class="lyric-hot"><h2>热门歌词爱心</h2>' +
-        hotHtml(j.popular_lyrics) +
-        "</section>" +
-        '<section class="board-compose" id="boardCompose">' +
-        composeHtml(j.me) +
-        "</section>" +
-        '<section class="board-stream"><h2>听友看法</h2>' +
-        commentsHtml(j.comments) +
-        "</section></div>";
-      fillSongSel(songs);
+        (section === "dev" ? devMain(j, hero) : songMain(j, hero, songs, ranking)) +
+        "</div>";
+      if (section !== "dev") {
+        fillSongSel(songs);
+        bindCompose();
+        bindStars("boardRate");
+        syncFlowerFromSong("boardFlower", (document.getElementById("boardSongSel") || {}).value || song);
+      } else {
+        bindDevCompose();
+        startCarousel();
+      }
       bindNav();
-      bindCompose();
-      bindStars("boardRate");
     });
   }
 

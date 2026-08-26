@@ -41,6 +41,21 @@ SONG_IDS = {s["id"] for s in SONGS}
 FEELINGS = ("沉", "刺", "暖", "空", "燃", "谜")
 COMPLETE_RATIO = 0.90
 
+# 写给开发者 · 公告栏轮播图（专辑封面）
+CAROUSEL_IMAGES: tuple[dict[str, str], ...] = (
+    {"src": "/assets/hub/hero_ep.png", "title": "《沉浮》", "caption": "Float & Sink — 四曲 EP"},
+    {"src": "/assets/hub/03_bait.jpg", "title": "饵", "caption": "纯粹与占有"},
+    {"src": "/assets/hub/02_shark.jpg", "title": "鲨鱼", "caption": "明知鱼鳍即危险"},
+    {"src": "/assets/hub/01_submarine.jpg", "title": "潜水艇", "caption": "隔着潜望镜想上岸"},
+    {"src": "/assets/hub/04_volcano.jpg", "title": "火山群岛", "caption": "听不懂就算了——正好"},
+)
+
+DEV_ANNOUNCEMENTS: tuple[str, ...] = (
+    "留言仓已开放：完播、点赞、歌词爱心与看法都会汇在这里。",
+    "播放页句子右侧可标♡；听完可在下方写入留言仓。",
+    "写给开发者：Bug、建议、合作意向都欢迎，会定期查看。",
+)
+
 
 def song_or_none(song_id: str | None) -> str | None:
     if not song_id:
