@@ -125,10 +125,9 @@
   }
 
   function commentsHtml(list) {
-    if (!list || !list.length) return '<p class="board-empty">留言仓还是空的。听完一首，把感受留在这里。</p>';
+    if (!list || !list.length) return '<p class="board-empty">留言仓还是空的。听完一首，把看法留在这里。</p>';
     return list
       .map(function (c) {
-        var feel = c.feeling ? '<span class="feeling">' + esc(c.feeling) + "</span>" : "";
         var stars = c.rating ? '<span class="stars">' + "★".repeat(c.rating) + "</span>" : "";
         return (
           '<article class="comment-card"><div class="meta"><span>' +
@@ -136,7 +135,6 @@
           "</span><span>" +
           esc(c.title) +
           "</span>" +
-          feel +
           stars +
           "<span>" +
           esc(String(c.created_at || "").replace("T", " ").slice(0, 16)) +
@@ -148,21 +146,71 @@
       .join("");
   }
 
+  function starsHtml(id) {
+    return (
+      '<div class="rate-stars" id="' +
+      id +
+      '" data-value="0" role="radiogroup" aria-label="评分">' +
+      [1, 2, 3, 4, 5]
+        .map(function (n) {
+          return (
+            '<button type="button" class="rate-star" data-v="' +
+            n +
+            '" aria-label="' +
+            n +
+            '星">☆</button>'
+          );
+        })
+        .join("") +
+      "</div>"
+    );
+  }
+
+  function paintStars(el, value) {
+    if (!el) return;
+    el.setAttribute("data-value", String(value || 0));
+    el.querySelectorAll(".rate-star").forEach(function (btn) {
+      var v = Number(btn.getAttribute("data-v"));
+      var on = v <= value;
+      btn.classList.toggle("is-on", on);
+      btn.textContent = on ? "★" : "☆";
+    });
+  }
+
+  function bindStars(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.querySelectorAll(".rate-star").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var v = Number(btn.getAttribute("data-v"));
+        var cur = Number(el.getAttribute("data-value") || 0);
+        paintStars(el, cur === v ? 0 : v);
+      });
+    });
+  }
+
+  function getRating(id) {
+    var el = document.getElementById(id);
+    if (!el) return null;
+    var v = Number(el.getAttribute("data-value") || 0);
+    return v > 0 ? v : null;
+  }
+
   function composeHtml(me) {
     var needLogin = me && me.auth_configured && me.auth_required && !me.authenticated;
     var lock = needLogin
       ? '<p class="board-empty">登录后才能写入留言仓。完播与点赞也会记到你的听歌身份上。<a href="/sign-in?return_to=/board.html">去登录</a></p>'
       : "";
     return (
-      "<h2>感受与评价</h2>" +
+      "<h2>写下看法</h2>" +
       lock +
       '<textarea id="boardBody" maxlength="800" placeholder="这首让你停在哪一句？想不想再听？不必写乐评腔。" ' +
       (needLogin ? "disabled" : "") +
       "></textarea>" +
       '<div class="row">' +
       '<select id="boardSongSel"></select>' +
-      '<select id="boardFeel"><option value="">感受</option><option>沉</option><option>刺</option><option>暖</option><option>空</option><option>燃</option><option>谜</option></select>' +
-      '<select id="boardRate"><option value="">评分</option><option value="5">5 星</option><option value="4">4 星</option><option value="3">3 星</option><option value="2">2 星</option><option value="1">1 星</option></select>' +
+      '<span class="rate-label">评分</span>' +
+      starsHtml("boardRate") +
       '<button type="button" class="primary" id="boardSend"' +
       (needLogin ? " disabled" : "") +
       ">写入留言仓</button>" +
@@ -213,10 +261,7 @@
       api("/api/ep/comment", {
         song_id: document.getElementById("boardSongSel").value,
         body: body,
-        feeling: document.getElementById("boardFeel").value,
-        rating: document.getElementById("boardRate").value
-          ? Number(document.getElementById("boardRate").value)
-          : null
+        rating: getRating("boardRate")
       }).then(function (j) {
         if (j._status === 401) {
           location.href = "/sign-in?return_to=" + encodeURIComponent(location.pathname + location.search);
@@ -227,6 +272,7 @@
           return;
         }
         document.getElementById("boardBody").value = "";
+        paintStars(document.getElementById("boardRate"), 0);
         hint.textContent = "已写入。";
         load();
       });
@@ -278,6 +324,7 @@
       fillSongSel(songs);
       bindNav();
       bindCompose();
+      bindStars("boardRate");
     });
   }
 

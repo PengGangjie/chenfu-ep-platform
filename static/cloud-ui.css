@@ -64,12 +64,19 @@
 .cloud-player-note .row{
   display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px;
 }
-.cloud-player-note select,.cloud-player-note button{
+.cloud-player-note button{
   font:inherit;font-size:13px;border-radius:999px;padding:6px 12px;
   border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.08);color:#fff;
 }
 .cloud-player-note button.primary{background:#c41e3a;border-color:#c41e3a;cursor:pointer}
 .cloud-player-note .hint{font-size:12px;opacity:.55;margin:6px 0 0}
+.rate-label{font-size:13px;opacity:.65}
+.rate-stars{display:inline-flex;align-items:center;gap:2px}
+.rate-star{
+  border:0;background:transparent;cursor:pointer;padding:2px 4px;
+  font-size:20px;line-height:1;color:rgba(255,255,255,.35);
+}
+.rate-star.is-on,.rate-star:hover{color:#ffb060}
 
 /* —— 留言仓（导航仓） —— */
 body.board-page{
@@ -150,14 +157,16 @@ body.board-page{
   font:inherit;font-size:13px;border-radius:999px;padding:7px 14px;
   border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;
 }
+.board-compose select{
+  -webkit-appearance:menulist;appearance:menulist;
+  border-radius:10px;min-width:7em;color:#fff;
+}
+.board-compose select option{background:#1a1f24;color:#fff}
 .board-compose button.primary{background:#c41e3a;border-color:#c41e3a;cursor:pointer}
 .comment-card{
   padding:16px 0;border-bottom:1px solid rgba(255,255,255,.06);
 }
 .comment-card .meta{font-size:12px;opacity:.5;margin-bottom:6px;display:flex;gap:10px;flex-wrap:wrap}
-.comment-card .feeling{
-  border:1px solid rgba(159,232,255,.35);border-radius:999px;padding:1px 8px;color:#9fe8ff;
-}
 .comment-card .body{line-height:1.65;font-size:15px;white-space:pre-wrap}
 .board-empty{opacity:.5;padding:12px 0}
 .stars{letter-spacing:.08em;color:#ffb060}

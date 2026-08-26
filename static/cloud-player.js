@@ -144,6 +144,56 @@
     });
   }
 
+  function starsHtml(id) {
+    return (
+      '<div class="rate-stars" id="' +
+      id +
+      '" data-value="0" role="radiogroup" aria-label="评分">' +
+      [1, 2, 3, 4, 5]
+        .map(function (n) {
+          return (
+            '<button type="button" class="rate-star" data-v="' +
+            n +
+            '" aria-label="' +
+            n +
+            '星">☆</button>'
+          );
+        })
+        .join("") +
+      "</div>"
+    );
+  }
+
+  function paintStars(el, value) {
+    if (!el) return;
+    el.setAttribute("data-value", String(value || 0));
+    el.querySelectorAll(".rate-star").forEach(function (btn) {
+      var v = Number(btn.getAttribute("data-v"));
+      var on = v <= value;
+      btn.classList.toggle("is-on", on);
+      btn.textContent = on ? "★" : "☆";
+    });
+  }
+
+  function bindStars(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.querySelectorAll(".rate-star").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var v = Number(btn.getAttribute("data-v"));
+        var cur = Number(el.getAttribute("data-value") || 0);
+        paintStars(el, cur === v ? 0 : v);
+      });
+    });
+  }
+
+  function getRating(id) {
+    var el = document.getElementById(id);
+    if (!el) return null;
+    var v = Number(el.getAttribute("data-value") || 0);
+    return v > 0 ? v : null;
+  }
+
   function ensureComposer() {
     if (document.getElementById("cloudNote")) return;
     var root = document.getElementById("syncLyrics") || document.querySelector(".player-panel");
@@ -153,14 +203,15 @@
     box.id = "cloudNote";
     box.innerHTML =
       "<label>听完想说</label>" +
-      '<textarea id="cloudNoteBody" maxlength="800" placeholder="对这首的感受、某句歌词、或想留给下一位听友的话"></textarea>' +
+      '<textarea id="cloudNoteBody" maxlength="800" placeholder="某句歌词、或想留给下一位听友的话"></textarea>' +
       '<div class="row">' +
-      '<select id="cloudNoteFeel"><option value="">感受</option><option>沉</option><option>刺</option><option>暖</option><option>空</option><option>燃</option><option>谜</option></select>' +
-      '<select id="cloudNoteRate"><option value="">评分</option><option value="5">5</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option></select>' +
+      '<span class="rate-label">评分</span>' +
+      starsHtml("cloudNoteRate") +
       '<button type="button" class="primary" id="cloudNoteSend">写入留言仓</button>' +
       "</div>" +
       '<p class="hint" id="cloudNoteHint">登录后会记入完播与排名。爱心点在歌词行右侧。</p>';
     root.insertAdjacentElement("afterend", box);
+    bindStars("cloudNoteRate");
     document.getElementById("cloudNoteSend").addEventListener("click", function () {
       var body = (document.getElementById("cloudNoteBody").value || "").trim();
       if (!body) {
@@ -170,10 +221,7 @@
       api("/api/ep/comment", {
         song_id: songId,
         body: body,
-        feeling: document.getElementById("cloudNoteFeel").value,
-        rating: document.getElementById("cloudNoteRate").value
-          ? Number(document.getElementById("cloudNoteRate").value)
-          : null
+        rating: getRating("cloudNoteRate")
       }).then(function (j) {
         if (j._status === 401) {
           location.href = "/sign-in?return_to=" + encodeURIComponent(location.pathname + location.hash);
@@ -184,6 +232,7 @@
           return;
         }
         document.getElementById("cloudNoteBody").value = "";
+        paintStars(document.getElementById("cloudNoteRate"), 0);
         document.getElementById("cloudNoteHint").textContent = "已写入留言仓。";
       });
     });
