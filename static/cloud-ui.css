@@ -269,7 +269,8 @@ body.board-page{
 
 .transport .row button.is-on,
 #btnLoop.is-on,
-#btnShuffle.is-on{
+#btnShuffle.is-on,
+#btnNext.is-on{
   border-color:rgba(159,232,255,.65);
   color:#9fe8ff;
   background:rgba(159,232,255,.12);

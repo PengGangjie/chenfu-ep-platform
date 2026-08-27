@@ -439,6 +439,7 @@
       syncFromTime();
     });
     audio.addEventListener("ended", function () {
+      if (window.chenfuOnTrackEnded) window.chenfuOnTrackEnded();
       stopTick();
       syncFromTime();
     });

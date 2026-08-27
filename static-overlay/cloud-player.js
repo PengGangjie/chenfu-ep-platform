@@ -174,12 +174,18 @@
     return -1;
   }
 
+  var advancing = false;
+
   function goToPlayer(url) {
-    var sep = url.indexOf("?") >= 0 ? "&" : "?";
-    location.assign(url + sep + "autoplay=1");
+    try {
+      sessionStorage.setItem("chenfu_autoplay", "1");
+      sessionStorage.setItem("chenfu_shuffle", shuffleMode ? "1" : "0");
+    } catch (e) {}
+    location.assign(encodeURI(url));
   }
 
   function playNextTrack() {
+    if (advancing) return;
     var idx = songIndex(songId);
     if (idx < 0) return;
     var target;
@@ -193,19 +199,44 @@
     } else {
       target = SONGS[(idx + 1) % SONGS.length];
     }
-    if (target && target.player) goToPlayer(target.player);
+    if (!target || !target.player) return;
+    advancing = true;
+    goToPlayer(target.player);
   }
 
-  function tryAutoplayFromQuery() {
-    try {
-      if (!new URLSearchParams(location.search).get("autoplay")) return;
-    } catch (e) {
+  function onTrackEnded() {
+    if (loopOne) {
+      var audio = document.getElementById("audio");
+      resetPlaySession();
+      if (audio) {
+        audio.currentTime = 0;
+        audio.play().catch(function () {});
+      }
       return;
     }
+    playNextTrack();
+  }
+  window.chenfuOnTrackEnded = onTrackEnded;
+
+  function tryAutoplayFromQuery() {
+    var want = false;
+    try {
+      want =
+        new URLSearchParams(location.search).get("autoplay") === "1" ||
+        sessionStorage.getItem("chenfu_autoplay") === "1";
+      sessionStorage.removeItem("chenfu_autoplay");
+    } catch (e) {}
+    if (!want) return;
     var audio = document.getElementById("audio");
     if (!audio) return;
     function start() {
-      audio.play().catch(function () {});
+      var p = audio.play();
+      if (p && p.catch) {
+        p.catch(function () {
+          var hint = document.getElementById("audioHint");
+          if (hint) hint.textContent = "下一首已就绪，点播放继续。";
+        });
+      }
     }
     if (audio.readyState >= 2) start();
     else audio.addEventListener("canplay", start, { once: true });
@@ -227,7 +258,7 @@
     if (!btn) return;
     btn.classList.toggle("is-on", shuffleMode);
     btn.setAttribute("aria-pressed", shuffleMode ? "true" : "false");
-    btn.textContent = shuffleMode ? "随机中" : "随机播放";
+    btn.textContent = shuffleMode ? "随机中" : "随机";
   }
 
   function fmtPct(n) {
@@ -259,9 +290,7 @@
     }
     if (like.parentNode !== row) {
       var loop = document.getElementById("btnLoop");
-      var shuffle = document.getElementById("btnShuffle");
-      var anchor = shuffle || loop;
-      if (anchor && anchor.parentNode === row) anchor.insertAdjacentElement("afterend", like);
+      if (loop && loop.parentNode === row) loop.insertAdjacentElement("afterend", like);
       else row.appendChild(like);
     }
 
@@ -499,10 +528,21 @@
     return Math.max(0, Math.min(1, audio.currentTime / audio.duration));
   }
 
+  function transportRow() {
+    return document.querySelector(".transport .row");
+  }
+
+  function insertBeforeLoop(btn) {
+    var loop = document.getElementById("btnLoop");
+    var row = transportRow();
+    if (loop && loop.parentNode) loop.parentNode.insertBefore(btn, loop);
+    else if (row) row.appendChild(btn);
+  }
+
   function ensureLoopBtn() {
     var btn = document.getElementById("btnLoop");
     if (!btn) {
-      var row = document.querySelector(".transport .row");
+      var row = transportRow();
       if (!row) return;
       btn = document.createElement("button");
       btn.type = "button";
@@ -524,26 +564,42 @@
     });
   }
 
+  function ensureNextBtn() {
+    var btn = document.getElementById("btnNext");
+    if (!btn) {
+      if (!transportRow()) return;
+      btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "ghost";
+      btn.id = "btnNext";
+      btn.textContent = "下一首";
+      insertBeforeLoop(btn);
+    }
+    if (btn.dataset.nextBound) return;
+    btn.dataset.nextBound = "1";
+    btn.title = "立即切换下一首（随机开启时随机切歌）";
+    btn.addEventListener("click", function () {
+      playNextTrack();
+    });
+  }
+
   function ensureShuffleBtn() {
     var btn = document.getElementById("btnShuffle");
     if (!btn) {
-      var row = document.querySelector(".transport .row");
-      if (!row) return;
+      if (!transportRow()) return;
       btn = document.createElement("button");
       btn.type = "button";
       btn.className = "ghost";
       btn.id = "btnShuffle";
-      btn.textContent = "随机播放";
-      var loop = document.getElementById("btnLoop");
-      if (loop && loop.parentNode === row) loop.insertAdjacentElement("afterend", btn);
-      else row.appendChild(btn);
+      btn.textContent = "随机";
+      insertBeforeLoop(btn);
     }
     if (btn.dataset.shuffleBound) return;
     btn.dataset.shuffleBound = "1";
     btn.setAttribute("aria-pressed", shuffleMode ? "true" : "false");
     btn.title = "播完后随机切歌；与单曲循环互斥";
     btn.classList.toggle("is-on", shuffleMode);
-    btn.textContent = shuffleMode ? "随机中" : "随机播放";
+    btn.textContent = shuffleMode ? "随机中" : "随机";
     btn.addEventListener("click", function () {
       var next = !shuffleMode;
       if (next) setLoop(false);
@@ -598,20 +654,27 @@
 
   function watchAudio() {
     var audio = document.getElementById("audio");
-    if (!audio) return;
+    if (!audio || audio.dataset.cloudWatch) return;
+    audio.dataset.cloudWatch = "1";
+    audio.loop = false;
     audio.addEventListener("timeupdate", function () {
       maxRatio = Math.max(maxRatio, currentRatio(audio));
+      if (
+        !loopOne &&
+        !advancing &&
+        audio.duration > 1 &&
+        isFinite(audio.duration) &&
+        audio.currentTime >= audio.duration - 0.2
+      ) {
+        maxRatio = 1;
+        flushPlay(true);
+        onTrackEnded();
+      }
     });
     audio.addEventListener("ended", function () {
       maxRatio = 1;
       flushPlay(true);
-      if (loopOne) {
-        resetPlaySession();
-        audio.currentTime = 0;
-        audio.play().catch(function () {});
-        return;
-      }
-      playNextTrack();
+      onTrackEnded();
     });
     audio.addEventListener("pause", function () {
       flushPlay(true);
@@ -631,6 +694,7 @@
   patchAudio();
   ensureBar();
   ensureLoopBtn();
+  ensureNextBtn();
   ensureShuffleBtn();
   injectDock();
   scheduleDecorate();
