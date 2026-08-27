@@ -176,32 +176,46 @@
 
   var advancing = false;
 
+  function pickRandomSong() {
+    var idx = songIndex(songId);
+    if (SONGS.length <= 1) return SONGS[0];
+    var pick;
+    do {
+      pick = Math.floor(Math.random() * SONGS.length);
+    } while (pick === idx);
+    return SONGS[pick];
+  }
+
   function goToPlayer(url) {
+    if (advancing) return;
+    advancing = true;
     try {
       sessionStorage.setItem("chenfu_autoplay", "1");
       sessionStorage.setItem("chenfu_shuffle", shuffleMode ? "1" : "0");
     } catch (e) {}
-    location.assign(encodeURI(url));
+    // 整页进入该曲播放页 + 歌词卡，不在当前页换音源
+    window.location.href = encodeURI(url);
   }
 
   function playNextTrack() {
-    if (advancing) return;
     var idx = songIndex(songId);
     if (idx < 0) return;
-    var target;
-    if (shuffleMode) {
-      if (SONGS.length <= 1) return;
-      var pick;
-      do {
-        pick = Math.floor(Math.random() * SONGS.length);
-      } while (pick === idx);
-      target = SONGS[pick];
-    } else {
-      target = SONGS[(idx + 1) % SONGS.length];
-    }
-    if (!target || !target.player) return;
-    advancing = true;
-    goToPlayer(target.player);
+    var target = shuffleMode
+      ? pickRandomSong()
+      : SONGS[(idx + 1) % SONGS.length];
+    if (target && target.player) goToPlayer(target.player);
+  }
+
+  function playSequentialTrack() {
+    var idx = songIndex(songId);
+    if (idx < 0) return;
+    var target = SONGS[(idx + 1) % SONGS.length];
+    if (target && target.player) goToPlayer(target.player);
+  }
+
+  function playRandomTrack() {
+    var target = pickRandomSong();
+    if (target && target.player) goToPlayer(target.player);
   }
 
   function onTrackEnded() {
@@ -565,21 +579,23 @@
   }
 
   function ensureNextBtn() {
-    var btn = document.getElementById("btnNext");
+    var btn = document.getElementById("btnNextSong");
     if (!btn) {
       if (!transportRow()) return;
       btn = document.createElement("button");
       btn.type = "button";
       btn.className = "ghost";
-      btn.id = "btnNext";
+      btn.id = "btnNextSong";
       btn.textContent = "下一首";
       insertBeforeLoop(btn);
     }
     if (btn.dataset.nextBound) return;
     btn.dataset.nextBound = "1";
-    btn.title = "立即切换下一首（随机开启时随机切歌）";
-    btn.addEventListener("click", function () {
-      playNextTrack();
+    btn.title = "进入下一首的播放页与歌词卡";
+    btn.addEventListener("click", function (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      playSequentialTrack();
     });
   }
 
@@ -597,13 +613,15 @@
     if (btn.dataset.shuffleBound) return;
     btn.dataset.shuffleBound = "1";
     btn.setAttribute("aria-pressed", shuffleMode ? "true" : "false");
-    btn.title = "播完后随机切歌；与单曲循环互斥";
+    btn.title = "进入随机一首的播放页与歌词卡";
     btn.classList.toggle("is-on", shuffleMode);
     btn.textContent = shuffleMode ? "随机中" : "随机";
-    btn.addEventListener("click", function () {
-      var next = !shuffleMode;
-      if (next) setLoop(false);
-      setShuffle(next);
+    btn.addEventListener("click", function (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      setLoop(false);
+      setShuffle(true);
+      playRandomTrack();
     });
   }
 
