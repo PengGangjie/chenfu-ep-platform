@@ -1,9 +1,9 @@
 (function () {
   var SONGS = [
-    { id: "bait", test: /饵/ },
-    { id: "shark", test: /鲨鱼/ },
-    { id: "sub", test: /潜水艇/ },
-    { id: "volcano", test: /火山群岛/ }
+    { id: "bait", test: /饵/, player: "/《饵》/饵_ep/player.html" },
+    { id: "shark", test: /鲨鱼/, player: "/《鲨鱼》/鲨鱼_EP_5.1/player.html" },
+    { id: "sub", test: /潜水艇/, player: "/《潜水艇》/潜水艇_ep/player.html" },
+    { id: "volcano", test: /火山群岛/, player: "/《火山群岛》/火山群岛_ep/player.html" }
   ];
 
   function songIdFromPath() {
@@ -29,6 +29,7 @@
   var lastFlush = 0;
   var hearts = {};
   var loopOne = false;
+  var shuffleMode = sessionStorage.getItem("chenfu_shuffle") === "1";
   var lastHeartTap = 0;
   var decorateScheduled = false;
 
@@ -166,7 +167,69 @@
     else setTimeout(fn, 16);
   }
 
-  function fmtPct(n) {
+  function songIndex(id) {
+    for (var i = 0; i < SONGS.length; i++) {
+      if (SONGS[i].id === id) return i;
+    }
+    return -1;
+  }
+
+  function goToPlayer(url) {
+    var sep = url.indexOf("?") >= 0 ? "&" : "?";
+    location.assign(url + sep + "autoplay=1");
+  }
+
+  function playNextTrack() {
+    var idx = songIndex(songId);
+    if (idx < 0) return;
+    var target;
+    if (shuffleMode) {
+      if (SONGS.length <= 1) return;
+      var pick;
+      do {
+        pick = Math.floor(Math.random() * SONGS.length);
+      } while (pick === idx);
+      target = SONGS[pick];
+    } else {
+      target = SONGS[(idx + 1) % SONGS.length];
+    }
+    if (target && target.player) goToPlayer(target.player);
+  }
+
+  function tryAutoplayFromQuery() {
+    try {
+      if (!new URLSearchParams(location.search).get("autoplay")) return;
+    } catch (e) {
+      return;
+    }
+    var audio = document.getElementById("audio");
+    if (!audio) return;
+    function start() {
+      audio.play().catch(function () {});
+    }
+    if (audio.readyState >= 2) start();
+    else audio.addEventListener("canplay", start, { once: true });
+  }
+
+  function setLoop(on) {
+    loopOne = on;
+    var btn = document.getElementById("btnLoop");
+    if (!btn) return;
+    btn.classList.toggle("is-on", loopOne);
+    btn.setAttribute("aria-pressed", loopOne ? "true" : "false");
+    btn.textContent = loopOne ? "循环中" : "单曲循环";
+  }
+
+  function setShuffle(on) {
+    shuffleMode = on;
+    sessionStorage.setItem("chenfu_shuffle", on ? "1" : "0");
+    var btn = document.getElementById("btnShuffle");
+    if (!btn) return;
+    btn.classList.toggle("is-on", shuffleMode);
+    btn.setAttribute("aria-pressed", shuffleMode ? "true" : "false");
+    btn.textContent = shuffleMode ? "随机中" : "随机播放";
+  }
+
     return Math.round((n || 0) * 100) + "%";
   }
 
@@ -195,7 +258,9 @@
     }
     if (like.parentNode !== row) {
       var loop = document.getElementById("btnLoop");
-      if (loop && loop.parentNode === row) loop.insertAdjacentElement("afterend", like);
+      var shuffle = document.getElementById("btnShuffle");
+      var anchor = shuffle || loop;
+      if (anchor && anchor.parentNode === row) anchor.insertAdjacentElement("afterend", like);
       else row.appendChild(like);
     }
 
@@ -452,10 +517,36 @@
     btn.setAttribute("aria-pressed", "false");
     btn.title = "循环播放；每次完整播完计入单曲数据";
     btn.addEventListener("click", function () {
-      loopOne = !loopOne;
-      btn.classList.toggle("is-on", loopOne);
-      btn.setAttribute("aria-pressed", loopOne ? "true" : "false");
-      btn.textContent = loopOne ? "循环中" : "单曲循环";
+      var next = !loopOne;
+      if (next) setShuffle(false);
+      setLoop(next);
+    });
+  }
+
+  function ensureShuffleBtn() {
+    var btn = document.getElementById("btnShuffle");
+    if (!btn) {
+      var row = document.querySelector(".transport .row");
+      if (!row) return;
+      btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "ghost";
+      btn.id = "btnShuffle";
+      btn.textContent = "随机播放";
+      var loop = document.getElementById("btnLoop");
+      if (loop && loop.parentNode === row) loop.insertAdjacentElement("afterend", btn);
+      else row.appendChild(btn);
+    }
+    if (btn.dataset.shuffleBound) return;
+    btn.dataset.shuffleBound = "1";
+    btn.setAttribute("aria-pressed", shuffleMode ? "true" : "false");
+    btn.title = "播完后随机切歌；与单曲循环互斥";
+    btn.classList.toggle("is-on", shuffleMode);
+    btn.textContent = shuffleMode ? "随机中" : "随机播放";
+    btn.addEventListener("click", function () {
+      var next = !shuffleMode;
+      if (next) setLoop(false);
+      setShuffle(next);
     });
   }
 
@@ -517,7 +608,9 @@
         resetPlaySession();
         audio.currentTime = 0;
         audio.play().catch(function () {});
+        return;
       }
+      playNextTrack();
     });
     audio.addEventListener("pause", function () {
       flushPlay(true);
@@ -537,9 +630,11 @@
   patchAudio();
   ensureBar();
   ensureLoopBtn();
+  ensureShuffleBtn();
   injectDock();
   scheduleDecorate();
   watchAudio();
+  tryAutoplayFromQuery();
   deferIdle(function () {
     loadSocial();
     ensureComposer();
