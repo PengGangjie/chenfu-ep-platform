@@ -230,6 +230,7 @@
     btn.textContent = shuffleMode ? "随机中" : "随机播放";
   }
 
+  function fmtPct(n) {
     return Math.round((n || 0) * 100) + "%";
   }
 
