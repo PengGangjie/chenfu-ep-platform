@@ -9,7 +9,7 @@ from typing import Any, Union
 from urllib.parse import quote
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from logto import LogtoClient, LogtoConfig, Storage, UserInfoScope
 from starlette.middleware.sessions import SessionMiddleware
@@ -38,6 +38,7 @@ PUBLIC_EXACT = {
     "/",
     "/index.html",
     "/favicon.ico",
+    "/board",
     "/board.html",
     "/cloud-auth.js",
     "/cloud-ui.css",
@@ -128,11 +129,14 @@ def auth_configured() -> bool:
 def current_sub(request: Request) -> str | None:
     if not auth_configured():
         return None
-    client = logto_client(request)
-    if not client.isAuthenticated():
+    try:
+        client = logto_client(request)
+        if not client.isAuthenticated():
+            return None
+        claims = client.getIdTokenClaims()
+        return claims.sub if claims else None
+    except Exception:  # noqa: BLE001
         return None
-    claims = client.getIdTokenClaims()
-    return claims.sub if claims else None
 
 
 def parse_guest_key(raw: str | None) -> str | None:
@@ -166,9 +170,12 @@ def ensure_actor_user(actor: str) -> None:
 def current_user_email(request: Request) -> str | None:
     if not auth_configured() or not current_sub(request):
         return None
-    claims = logto_client(request).getIdTokenClaims()
-    email = getattr(claims, "email", None) if claims else None
-    return str(email).strip() if email else None
+    try:
+        claims = logto_client(request).getIdTokenClaims()
+        email = getattr(claims, "email", None) if claims else None
+        return str(email).strip() if email else None
+    except Exception:  # noqa: BLE001
+        return None
 
 
 def is_admin(request: Request) -> bool:
@@ -325,6 +332,20 @@ async def callback(request: Request):
     return RedirectResponse(dest)
 
 
+@app.get("/board.html")
+@app.get("/board")
+async def board_page():
+    """留言板始终公开，避免静态缓存把游客拦在旧壳页。"""
+    path = settings.static_dir / "board.html"
+    if not path.is_file():
+        return HTMLResponse("留言板未就绪", status_code=404)
+    return FileResponse(
+        path,
+        media_type="text/html; charset=utf-8",
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
+    )
+
+
 @app.get("/sign-out")
 async def sign_out(request: Request):
     if not auth_configured():
@@ -381,9 +402,24 @@ async def api_board(request: Request, song: str | None = None, section: str | No
                 with_dev_messages=True,
             )
         else:
-            body = board_payload(actor, song)
+            # 总览/单曲也带开发者留言，游客不用点进「05」也能看到
+            body = board_payload(actor, song, with_dev_messages=True)
     except Exception as exc:  # noqa: BLE001
-        return JSONResponse({"db": False, "detail": str(exc), "songs": list(SONGS), "ranking": [], "comments": [], "popular_lyrics": []}, status_code=200)
+        return JSONResponse(
+            {
+                "db": False,
+                "detail": str(exc),
+                "songs": list(SONGS),
+                "ranking": [],
+                "comments": [],
+                "popular_lyrics": [],
+                "dev_messages": [],
+                "section": sec or None,
+                "carousel": list(CAROUSEL_IMAGES) if sec == "dev" else [],
+                "announcements": list(DEV_ANNOUNCEMENTS) if sec == "dev" else [],
+            },
+            status_code=200,
+        )
     body["me"] = {
         "authenticated": bool(current_sub(request)),
         "actor": actor,

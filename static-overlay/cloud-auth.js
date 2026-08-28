@@ -2,14 +2,23 @@
   function qs(id) { return document.getElementById(id); }
 
   function guestKey() {
-    var k = localStorage.getItem("chenfu_guest");
-    if (k && /^guest-[a-f0-9]{12}$/.test(k)) return k;
-    var raw =
-      (window.crypto && crypto.randomUUID && crypto.randomUUID().replace(/-/g, "")) ||
-      Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2);
-    k = "guest-" + raw.slice(0, 12);
-    localStorage.setItem("chenfu_guest", k);
-    return k;
+    try {
+      var k = localStorage.getItem("chenfu_guest");
+      if (k && /^guest-[a-f0-9]{12}$/.test(k)) return k;
+      var raw =
+        (window.crypto && crypto.randomUUID && crypto.randomUUID().replace(/-/g, "")) ||
+        Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2);
+      k = "guest-" + raw.slice(0, 12);
+      localStorage.setItem("chenfu_guest", k);
+      return k;
+    } catch (err) {
+      if (window.__chenfuGuestMem) return window.__chenfuGuestMem;
+      var raw2 =
+        (window.crypto && crypto.randomUUID && crypto.randomUUID().replace(/-/g, "")) ||
+        Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2);
+      window.__chenfuGuestMem = "guest-" + raw2.slice(0, 12);
+      return window.__chenfuGuestMem;
+    }
   }
 
   window.chenfuGuestKey = guestKey;
@@ -69,9 +78,10 @@
         return;
       }
       needAuthLinks().forEach(function (a) {
+        var to = a.getAttribute("href") || "/";
+        if (to.indexOf("/board.html") === 0 || to === "/board") return;
         a.addEventListener("click", function (ev) {
           ev.preventDefault();
-          var to = a.getAttribute("href") || "/";
           location.href = "/sign-in?return_to=" + encodeURIComponent(to);
         });
       });

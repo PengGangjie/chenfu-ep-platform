@@ -775,13 +775,22 @@
 
   function devMain(j, hero) {
     return (
-      carouselHtml(j.carousel, j.announcements) +
+      '<section class="board-stream"><h2>公开留言与回复</h2>' +
+      devMessagesHtml(j.dev_messages) +
+      "</section>" +
       '<section class="board-compose dev-compose">' +
       devComposeHtml() +
       "</section>" +
-      '<section class="board-stream"><h2>公开留言与回复</h2>' +
-      devMessagesHtml(j.dev_messages) +
-      "</section>"
+      carouselHtml(j.carousel, j.announcements)
+    );
+  }
+
+  function devTeaser(list) {
+    if (!list || !list.length) return "";
+    return (
+      '<section class="board-stream board-dev-teaser"><h2>写给开发者</h2>' +
+      devMessagesHtml(list.slice(0, 8)) +
+      '<p class="board-more"><a href="/board.html?section=dev" data-open-dev="1">查看全部与回复 ›</a></p></section>'
     );
   }
 
@@ -789,6 +798,7 @@
     return (
       (song ? "" : rankCards(ranking)) +
       (song ? rankCards((ranking || []).filter(function (s) { return s.id === song; })) : "") +
+      (song ? "" : devTeaser(j.dev_messages)) +
       '<section class="lyric-hot"><h2>热门歌词爱心</h2>' +
       hotHtml(j.popular_lyrics) +
       "</section>" +
@@ -833,6 +843,12 @@
           bindCompose();
           bindStars("boardRate");
           syncFlowerFromSong("boardFlower", (document.getElementById("boardSongSel") || {}).value || song);
+          document.querySelectorAll("[data-open-dev]").forEach(function (a) {
+            a.addEventListener("click", function (ev) {
+              ev.preventDefault();
+              setView("", "dev");
+            });
+          });
         } else {
           bindDevCompose();
           bindDevReplies();
@@ -842,7 +858,7 @@
       })
       .catch(function () {
         if (seq !== loadSeq || !main) return;
-        main.innerHTML = '<p class="board-empty">加载失败，请刷新页面重试。</p>';
+        main.innerHTML = '<p class="board-empty">加载失败，请刷新页面重试。游客无需登录即可查看写给开发者的留言。</p>';
       });
   }
 

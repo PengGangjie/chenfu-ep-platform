@@ -228,7 +228,10 @@ body.board-page{
 .dev-notes{
   margin:12px 0 0;padding:0 0 0 18px;line-height:1.7;font-size:14px;opacity:.72;
 }
-.dev-compose{margin-bottom:28px}
+.board-more{margin:8px 0 0}
+.board-more a{color:#9fe8ff;text-decoration:none;font-size:13px}
+.board-more a:hover{text-decoration:underline}
+.board-dev-teaser{margin:8px 0 28px}
 .comment-card.dev-msg .body{opacity:.92}
 .compose-nick{
   display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin:0 0 10px;
@@ -295,11 +298,13 @@ body.board-page{
   .board-nav .eyebrow{width:100%;padding-left:4px}
   .rank-grid{grid-template-columns:1fr}
   .board-hero h1{font-size:32px}
+  .dev-carousel{max-height:160px}
   .lyric-heart{
     width:44px;height:44px;min-width:44px;min-height:44px;
     max-width:44px;max-height:44px;
   }
-  body.hub-page .nav-links > a[href="/board.html"]{
+  body.hub-page .nav-links > a[href^="/board.html"],
+  body.player-page .nav-links > a[href^="/board.html"]{
     display:inline-flex !important;align-items:center;min-height:44px;
   }
 
