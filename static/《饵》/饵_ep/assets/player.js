@@ -242,18 +242,6 @@
       syncRoot.querySelectorAll(".sync-block").forEach(function (el) {
         el.classList.toggle("is-on", +el.getAttribute("data-i") === fl.bi);
       });
-      var onEl = syncRoot.querySelector(".sync-line.is-on");
-      if (onEl && !fromLock) {
-        if (window.matchMedia("(max-width: 860px)").matches) {
-          onEl.scrollIntoView({ block: "center", behavior: "smooth" });
-        } else {
-          var r = onEl.getBoundingClientRect();
-          var pr = syncRoot.getBoundingClientRect();
-          if (r.top < pr.top + 40 || r.bottom > pr.bottom - 40) {
-            onEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
-          }
-        }
-      }
     }
     if (btnPlay) btnPlay.textContent = audio.paused ? "播放" : "暂停";
   }

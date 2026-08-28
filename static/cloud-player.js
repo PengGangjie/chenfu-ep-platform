@@ -160,7 +160,94 @@
     });
   }
 
-  window.chenfuOnLyricsRendered = scheduleDecorate;
+  window.chenfuOnLyricsRendered = function () {
+    scheduleDecorate();
+    bindLyricsBrowse();
+  };
+
+  var lyricsHold = false;
+  var lyricsHoldTimer = null;
+  var lyricsIgnoreUntil = 0;
+  var lastOnLyricKey = "";
+  var LYRICS_HOLD_MS = 2600;
+
+  function lyricsRoot() {
+    return document.querySelector(".sync-lyrics") || document.getElementById("syncLyrics");
+  }
+
+  function currentOnLyric() {
+    var root = lyricsRoot();
+    if (!root) return null;
+    return root.querySelector(".lyric-line.is-on, .sync-line.is-on");
+  }
+
+  function lyricKey(el) {
+    if (!el) return "";
+    return (
+      (el.getAttribute("data-bi") || "") +
+      ":" +
+      (el.getAttribute("data-li") || "") +
+      ":" +
+      String(el.textContent || "").slice(0, 32)
+    );
+  }
+
+  function scrollToPlayingLyric(jumpBack) {
+    if (lyricsHold) return;
+    var el = currentOnLyric();
+    if (!el || !el.scrollIntoView) return;
+    var root = lyricsRoot();
+    if (!root) return;
+    var er = el.getBoundingClientRect();
+    var rr = root.getBoundingClientRect();
+    var pad = 28;
+    var inView = er.top >= rr.top + pad && er.bottom <= rr.bottom - pad;
+    if (inView && !jumpBack) return;
+    lyricsIgnoreUntil = Date.now() + 480;
+    el.scrollIntoView({ behavior: "smooth", block: jumpBack || !inView ? "center" : "nearest" });
+  }
+
+  function userBrowsingLyrics() {
+    if (Date.now() < lyricsIgnoreUntil) return;
+    lyricsHold = true;
+    window.chenfuLyricsUserHold = true;
+    if (lyricsHoldTimer) clearTimeout(lyricsHoldTimer);
+    lyricsHoldTimer = setTimeout(function () {
+      lyricsHold = false;
+      window.chenfuLyricsUserHold = false;
+      lastOnLyricKey = "";
+      scrollToPlayingLyric(true);
+    }, LYRICS_HOLD_MS);
+  }
+
+  function bindLyricsBrowse() {
+    var root = lyricsRoot();
+    if (!root || root.dataset.lyricBrowseBound) return;
+    root.dataset.lyricBrowseBound = "1";
+    root.addEventListener("wheel", userBrowsingLyrics, { passive: true });
+    root.addEventListener("touchmove", userBrowsingLyrics, { passive: true });
+    root.addEventListener(
+      "scroll",
+      function () {
+        userBrowsingLyrics();
+      },
+      { passive: true }
+    );
+    root.addEventListener("click", function (ev) {
+      if (!ev.target.closest(".lyric-line, .sync-line")) return;
+      lyricsHold = false;
+      window.chenfuLyricsUserHold = false;
+      if (lyricsHoldTimer) clearTimeout(lyricsHoldTimer);
+    });
+  }
+
+  function followPlayingLyric() {
+    bindLyricsBrowse();
+    var key = lyricKey(currentOnLyric());
+    if (!key || key === lastOnLyricKey) return;
+    lastOnLyricKey = key;
+    scrollToPlayingLyric(false);
+  }
 
   function deferIdle(fn) {
     if (window.requestIdleCallback) window.requestIdleCallback(fn, { timeout: 2500 });
@@ -677,6 +764,7 @@
     audio.loop = false;
     audio.addEventListener("timeupdate", function () {
       maxRatio = Math.max(maxRatio, currentRatio(audio));
+      followPlayingLyric();
       if (
         !loopOne &&
         !advancing &&
@@ -716,6 +804,7 @@
   ensureShuffleBtn();
   injectDock();
   scheduleDecorate();
+  bindLyricsBrowse();
   watchAudio();
   tryAutoplayFromQuery();
   deferIdle(function () {

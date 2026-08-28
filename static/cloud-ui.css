@@ -474,12 +474,7 @@ body.board-page{
     mask-image:linear-gradient(180deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
     -webkit-mask-image:linear-gradient(180deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
   }
-  body.player-page .sync-lyrics .sync-line.is-on,
-  body.player-page .sync-lyrics .lyric-line.is-on{
-    position:sticky;
-    top:42%;
-    z-index:2;
-  }
+  /* 正在唱只高亮，不 sticky 钉在视口中间，否则滚轮完全划不动 */
   body.player-page .sync-block{
     opacity:.32;
   }

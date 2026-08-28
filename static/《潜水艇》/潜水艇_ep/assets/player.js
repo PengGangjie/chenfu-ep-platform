@@ -210,8 +210,7 @@
     syncMoodRail(i);
     var on = blocks[i];
     if (seek && on && on.scrollIntoView) {
-      var block = window.matchMedia("(max-width: 860px)").matches ? "center" : "nearest";
-      on.scrollIntoView({ behavior: "smooth", block: block });
+      on.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
     if (seek && audio && isFinite(audio.duration)) {
       var target = Math.min(cue.start + 0.05, Math.max(0, audio.duration - 0.2));
@@ -252,7 +251,7 @@
       nowPlaying.textContent = "正在唱 · " + item.text;
     }
     if (scroll && item.el && item.el.scrollIntoView) {
-      item.el.scrollIntoView({ behavior: "smooth", block: window.matchMedia("(max-width: 860px)").matches ? "center" : "nearest" });
+      item.el.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
   }
 
@@ -313,7 +312,7 @@
     if (found !== idx) setActive(found, false);
     updateProgress(found, t);
     var fi = findLineAt(t);
-    if (fi !== lineIdx) highlightLine(fi, window.matchMedia("(max-width: 860px)").matches);
+    if (fi !== lineIdx) highlightLine(fi, false);
   }
 
   function tick() {

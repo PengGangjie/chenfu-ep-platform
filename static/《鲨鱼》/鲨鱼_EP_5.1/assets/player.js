@@ -323,7 +323,7 @@
     }
     if (nowPlaying) nowPlaying.textContent = "正在唱 · " + item.text;
     if (scroll && item.el && item.el.scrollIntoView) {
-      item.el.scrollIntoView({ behavior: "smooth", block: window.matchMedia("(max-width: 860px)").matches ? "center" : "nearest" });
+      item.el.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
     // 清其他行字高亮
     flatLines.forEach(function (x, n) {
@@ -390,7 +390,7 @@
     if (found !== idx) setActive(found, false);
     updateProgress(found, t);
     var fi = findLineAt(t);
-    if (fi !== lineIdx) highlightLine(fi, window.matchMedia("(max-width: 860px)").matches);
+    if (fi !== lineIdx) highlightLine(fi, false);
     if (fi >= 0) highlightChars(fi, t);
   }
 
