@@ -296,5 +296,8 @@
     cancelAnimationFrame(rafId);
     updateUI();
   });
+  audio.addEventListener("ended", function () {
+    if (window.chenfuOnTrackEnded) window.chenfuOnTrackEnded();
+  });
   applyVersion(currentVer, false);
 })();

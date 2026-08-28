@@ -29,7 +29,12 @@
   var lastFlush = 0;
   var hearts = {};
   var loopOne = false;
-  var shuffleMode = sessionStorage.getItem("chenfu_shuffle") === "1";
+  var shuffleMode = false;
+  try {
+    shuffleMode = sessionStorage.getItem("chenfu_shuffle") === "1";
+    loopOne = sessionStorage.getItem("chenfu_loop_one") === "1";
+    if (loopOne) shuffleMode = false;
+  } catch (e) {}
   var lastHeartTap = 0;
   var decorateScheduled = false;
 
@@ -279,9 +284,13 @@
     try {
       sessionStorage.setItem("chenfu_autoplay", "1");
       sessionStorage.setItem("chenfu_shuffle", shuffleMode ? "1" : "0");
+      sessionStorage.setItem("chenfu_loop_one", loopOne ? "1" : "0");
     } catch (e) {}
-    // 整页进入该曲播放页 + 歌词卡，不在当前页换音源
-    window.location.href = encodeURI(url);
+    var dest = url;
+    if (dest.indexOf("autoplay=") < 0) {
+      dest += (dest.indexOf("?") >= 0 ? "&" : "?") + "autoplay=1";
+    }
+    window.location.href = encodeURI(dest);
   }
 
   function playNextTrack() {
@@ -325,26 +334,59 @@
       want =
         new URLSearchParams(location.search).get("autoplay") === "1" ||
         sessionStorage.getItem("chenfu_autoplay") === "1";
-      sessionStorage.removeItem("chenfu_autoplay");
     } catch (e) {}
     if (!want) return;
     var audio = document.getElementById("audio");
     if (!audio) return;
+    audio.preload = "auto";
+    audio.autoplay = true;
+    audio.setAttribute("autoplay", "");
+    var started = false;
+    function clearFlag() {
+      try {
+        sessionStorage.removeItem("chenfu_autoplay");
+      } catch (e) {}
+    }
+    function armGestureRetry() {
+      var once = function () {
+        document.removeEventListener("pointerdown", once, true);
+        document.removeEventListener("keydown", once, true);
+        start();
+      };
+      document.addEventListener("pointerdown", once, true);
+      document.addEventListener("keydown", once, true);
+    }
     function start() {
+      if (started && !audio.paused) return;
       var p = audio.play();
-      if (p && p.catch) {
-        p.catch(function () {
+      if (p && p.then) {
+        p.then(function () {
+          started = true;
+          clearFlag();
+        }).catch(function () {
           var hint = document.getElementById("audioHint");
           if (hint) hint.textContent = "下一首已就绪，点播放继续。";
+          armGestureRetry();
         });
       }
     }
+    audio.addEventListener("playing", function () {
+      started = true;
+      clearFlag();
+    });
     if (audio.readyState >= 2) start();
-    else audio.addEventListener("canplay", start, { once: true });
+    audio.addEventListener("canplay", start, { once: true });
+    audio.addEventListener("loadeddata", start, { once: true });
+    setTimeout(start, 400);
   }
 
   function setLoop(on) {
     loopOne = on;
+    try {
+      sessionStorage.setItem("chenfu_loop_one", on ? "1" : "0");
+    } catch (e) {}
+    var audio = document.getElementById("audio");
+    if (audio) audio.loop = !!on;
     var btn = document.getElementById("btnLoop");
     if (!btn) return;
     btn.classList.toggle("is-on", loopOne);
@@ -657,7 +699,7 @@
     if (btn.dataset.loopBound) return;
     btn.dataset.loopBound = "1";
     btn.setAttribute("aria-pressed", "false");
-    btn.title = "循环播放；每次完整播完计入单曲数据";
+    btn.title = "只循环当前这一首；关闭后恢复专辑顺序：饵 → 鲨 → 潜 → 火山 → 饵";
     btn.addEventListener("click", function () {
       var next = !loopOne;
       if (next) setShuffle(false);
@@ -678,7 +720,7 @@
     }
     if (btn.dataset.nextBound) return;
     btn.dataset.nextBound = "1";
-    btn.title = "进入下一首的播放页与歌词卡";
+    btn.title = "专辑顺序下一首（饵 → 鲨 → 潜 → 火山 → 饵），并自动播放";
     btn.addEventListener("click", function (ev) {
       ev.preventDefault();
       ev.stopPropagation();
@@ -700,7 +742,7 @@
     if (btn.dataset.shuffleBound) return;
     btn.dataset.shuffleBound = "1";
     btn.setAttribute("aria-pressed", shuffleMode ? "true" : "false");
-    btn.title = "进入随机一首的播放页与歌词卡";
+    btn.title = "四曲随机循环：点一下立刻换一首，之后每首播完也随机下一首";
     btn.classList.toggle("is-on", shuffleMode);
     btn.textContent = shuffleMode ? "随机中" : "随机";
     btn.addEventListener("click", function (ev) {
@@ -761,16 +803,17 @@
     var audio = document.getElementById("audio");
     if (!audio || audio.dataset.cloudWatch) return;
     audio.dataset.cloudWatch = "1";
-    audio.loop = false;
+    audio.loop = !!loopOne;
     audio.addEventListener("timeupdate", function () {
       maxRatio = Math.max(maxRatio, currentRatio(audio));
       followPlayingLyric();
       if (
         !loopOne &&
+        !audio.loop &&
         !advancing &&
         audio.duration > 1 &&
         isFinite(audio.duration) &&
-        audio.currentTime >= audio.duration - 0.2
+        audio.currentTime >= audio.duration - 0.05
       ) {
         maxRatio = 1;
         flushPlay(true);
@@ -778,6 +821,7 @@
       }
     });
     audio.addEventListener("ended", function () {
+      if (advancing) return;
       maxRatio = 1;
       flushPlay(true);
       onTrackEnded();
@@ -806,6 +850,8 @@
   scheduleDecorate();
   bindLyricsBrowse();
   watchAudio();
+  setLoop(loopOne);
+  setShuffle(shuffleMode);
   tryAutoplayFromQuery();
   deferIdle(function () {
     loadSocial();
