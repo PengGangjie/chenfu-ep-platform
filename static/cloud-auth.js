@@ -152,9 +152,10 @@
     if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
     if (ev.button && ev.button !== 0) return;
     var t = ev.target;
-    if (t && t.closest && t.closest("#chenfuBoardLayer")) return;
+    if (t && t.closest && t.closest("#chenfuNowPlay")) return;
     var a = t && t.closest ? t.closest("a") : null;
     if (!a) return;
+    if (t && t.closest && t.closest("#chenfuBoardLayer")) return;
     var kind = stayPlayKind(a);
     if (!kind) return;
     ev.preventDefault();

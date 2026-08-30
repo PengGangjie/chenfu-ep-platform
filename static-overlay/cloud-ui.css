@@ -326,11 +326,11 @@ body.board-page{
     width:100%;
     touch-action:none;
   }
-  body.player-page .nav,
-  body.player-page .floating-dock,
-  body.player-page .chenfu-board-layer,
-  body.player-page a[href*="board"]{
-    touch-action:manipulation;
+  body.player-page.player-immersive-mobile .chenfu-board-layer,
+  body.player-page.player-immersive-mobile .chenfu-nowplay,
+  body.player-page.player-immersive-mobile .chenfu-nowplay-back,
+  body.player-page.player-immersive-mobile .chenfu-nowplay-pp{
+    touch-action:manipulation !important;
   }
   body.player-page .foot{display:none}
   body.player-page .player-shell{
@@ -498,6 +498,7 @@ body.board-page{
   display:none;flex-direction:column;
   background:#07090b;
   padding-top:env(safe-area-inset-top, 0px);
+  touch-action:manipulation;
 }
 .chenfu-board-layer.is-on{display:flex}
 .chenfu-nowplay{
@@ -506,16 +507,20 @@ body.board-page{
   min-height:52px;
   background:#111418;
   border-bottom:1px solid rgba(255,255,255,.08);
+  position:relative;z-index:5;
+  touch-action:manipulation;
 }
 .chenfu-nowplay-pp{
   flex:0 0 52px;border:0;background:transparent;color:#f5f7fa;
   font-size:14px;cursor:pointer;letter-spacing:0;
+  touch-action:manipulation;
 }
 .chenfu-nowplay-pp:hover{background:rgba(255,255,255,.06)}
 .chenfu-nowplay-back{
   flex:1;min-width:0;display:flex;align-items:center;gap:12px;
   border:0;background:transparent;color:#f5f7fa;cursor:pointer;
-  text-align:left;font:inherit;padding:8px 16px 8px 0;
+  text-align:left;font:inherit;padding:8px 12px 8px 0;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;
 }
 .chenfu-nowplay-back:hover{background:rgba(255,255,255,.04)}
 .chenfu-nowplay-eq{
@@ -541,27 +546,60 @@ body.board-page{
 }
 .chenfu-nowplay-title{
   font-size:15px;font-weight:600;letter-spacing:.06em;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52vw;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:42vw;
 }
 .chenfu-nowplay-go{
-  margin-left:auto;flex-shrink:0;font-size:12px;opacity:.62;white-space:nowrap;
+  margin-left:auto;flex-shrink:0;font-size:12px;opacity:1;white-space:nowrap;
+  padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.22);
+  background:rgba(255,255,255,.08);
 }
 .chenfu-board-frame{
   flex:1;width:100%;border:0;background:#07090b;min-height:0;
+  position:relative;z-index:1;
 }
 .chenfu-board-mount{
   flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;
   padding-top:16px;padding-bottom:40px;
+  position:relative;z-index:1;
+}
+.chenfu-board-frame:not(.is-active),
+.chenfu-board-mount:not(.is-active),
+.chenfu-board-frame[hidden],
+.chenfu-board-mount[hidden]{
+  display:none !important;
+  flex:0 0 0 !important;
+  width:0 !important;
+  height:0 !important;
+  min-height:0 !important;
+  overflow:hidden !important;
+  pointer-events:none !important;
+  visibility:hidden !important;
+}
+.chenfu-board-frame.is-active{
+  display:block !important;
+  flex:1 1 auto !important;
+  width:100% !important;
+  visibility:visible !important;
+  pointer-events:auto !important;
+}
+.chenfu-board-mount.is-active{
+  display:grid !important;
+  flex:1 1 auto !important;
+  width:100% !important;
+  visibility:visible !important;
+  pointer-events:auto !important;
 }
 .chenfu-board-layer .board-nav{top:8px}
 body.chenfu-board-open .floating-dock{visibility:hidden !important}
 html.board-embed .nav,
 body.board-embed .nav{display:none !important}
 html.board-embed .board-shell,
-body.board-embed .board-shell{padding-top:20px}
+body.board-embed .board-shell,
+.chenfu-board-mount.board-embed{padding-top:20px}
 html.chenfu-embed .nav,
 html.chenfu-embed .floating-dock,
 body.chenfu-embed .nav,
 body.chenfu-embed .floating-dock{display:none !important}
 html.chenfu-embed body.hub-page .nav,
 body.chenfu-embed.hub-page .nav{display:none !important}
+html.chenfu-embed .hub-stage--hero{display:none !important}

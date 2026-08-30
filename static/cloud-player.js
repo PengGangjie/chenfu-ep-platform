@@ -697,6 +697,7 @@
     layer.classList.remove("is-on");
     document.body.classList.remove("chenfu-board-open");
     layer.setAttribute("aria-hidden", "true");
+    showStayPane("");
     resumeIfWasPlaying();
   }
 
@@ -761,22 +762,40 @@
     return "";
   }
 
-  function withEmbedParam(href) {
+  function withEmbedParam(href, kind) {
     try {
       var u = new URL(href, location.origin);
       u.searchParams.set("chenfu_embed", "1");
+      if (kind === "hub" && !u.hash) u.hash = "tracks";
       return u.pathname + u.search + u.hash;
     } catch (e) {
       return href;
     }
   }
 
+  function unloadStayFrame(frame) {
+    if (!frame) return;
+    try {
+      if (frame.getAttribute("src") && frame.getAttribute("src") !== "about:blank") {
+        frame.src = "about:blank";
+      }
+    } catch (e) {}
+  }
+
   function showStayPane(kind) {
     var mount = document.getElementById("chenfuBoardMount");
     var frame = document.getElementById("chenfuStayFrame");
     var board = kind === "board";
-    if (mount) mount.hidden = !board;
-    if (frame) frame.hidden = board;
+    var showFrame = kind === "hub" || kind === "chapter";
+    if (mount) {
+      mount.hidden = !board;
+      mount.classList.toggle("is-active", board);
+    }
+    if (frame) {
+      frame.hidden = !showFrame;
+      frame.classList.toggle("is-active", showFrame);
+      if (!showFrame) unloadStayFrame(frame);
+    }
   }
 
   function openStayOverlay(kind, href) {
@@ -798,7 +817,7 @@
       });
     } else {
       var frame = document.getElementById("chenfuStayFrame");
-      var src = withEmbedParam(href);
+      var src = withEmbedParam(href, kind);
       if (frame) {
         frame.title = kind === "hub" ? "《沉浮》" : "章节";
         if (frame.getAttribute("src") !== src) frame.src = src;
@@ -837,8 +856,20 @@
     if (stayFrame) {
       stayFrame.addEventListener("load", resumeIfWasPlaying);
     }
-    document.getElementById("chenfuNowPlayBack").addEventListener("click", function () {
+    function goBackToLyrics(ev) {
+      if (ev) {
+        ev.preventDefault();
+        if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+        ev.stopPropagation();
+      }
       closeBoardOverlay();
+    }
+    var backBtn = document.getElementById("chenfuNowPlayBack");
+    backBtn.addEventListener("pointerdown", goBackToLyrics);
+    backBtn.addEventListener("click", goBackToLyrics);
+    document.getElementById("chenfuNowPlayToggle").addEventListener("pointerdown", function (ev) {
+      ev.stopPropagation();
+      if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
     });
     document.getElementById("chenfuNowPlayToggle").addEventListener("click", function (ev) {
       ev.stopPropagation();
@@ -887,9 +918,20 @@
       if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
       if (ev.button && ev.button !== 0) return;
       var t = ev.target;
-      if (t && t.closest && t.closest("#chenfuBoardLayer")) return;
+      if (t && t.closest && t.closest("#chenfuNowPlay")) return;
       var a = t && t.closest ? t.closest("a") : null;
       if (!a) return;
+      var href = a.href || a.getAttribute("href") || "";
+      var inLayer = t && t.closest && t.closest("#chenfuBoardLayer");
+      if (inLayer) {
+        if (href.indexOf("player.html") >= 0) {
+          ev.preventDefault();
+          if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+          ev.stopPropagation();
+          if (window.chenfuOnBoardPlayer) window.chenfuOnBoardPlayer(href);
+        }
+        return;
+      }
       var kind = stayPlayKind(a);
       if (!kind) return;
       ev.preventDefault();
@@ -900,7 +942,7 @@
       if (now - last < 400) return;
       last = now;
       window.__chenfuBoardOpenAt = now;
-      openStayOverlay(kind, a.href || a.getAttribute("href") || "");
+      openStayOverlay(kind, href);
     }
     document.addEventListener("pointerdown", intercept, true);
     document.addEventListener("click", intercept, true);
