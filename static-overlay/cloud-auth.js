@@ -119,4 +119,33 @@
   } else {
     preparePlayerLinks();
   }
+
+  function isBoardHref(href) {
+    if (!href) return false;
+    href = String(href);
+    return href.indexOf("board.html") >= 0 || href === "/board" || /\/board(\?|#|$)/.test(href);
+  }
+
+  function interceptBoardWhilePlaying(ev) {
+    if (!document.getElementById("audio")) return;
+    if (document.body && document.body.classList.contains("board-page")) return;
+    if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+    if (ev.button && ev.button !== 0) return;
+    var t = ev.target;
+    if (t && t.closest && t.closest("#chenfuBoardLayer")) return;
+    var a = t && t.closest ? t.closest("a") : null;
+    if (!a) return;
+    if (!isBoardHref(a.getAttribute("href") || "") && !isBoardHref(a.href)) return;
+    ev.preventDefault();
+    if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+    ev.stopPropagation();
+    var href = a.href || a.getAttribute("href") || "";
+    var now = Date.now();
+    if (window.__chenfuBoardOpenAt && now - window.__chenfuBoardOpenAt < 400) return;
+    window.__chenfuBoardOpenAt = now;
+    if (window.chenfuOpenBoard) window.chenfuOpenBoard(href);
+    else window.__chenfuBoardPending = href;
+  }
+  document.addEventListener("pointerdown", interceptBoardWhilePlaying, true);
+  document.addEventListener("click", interceptBoardWhilePlaying, true);
 })();

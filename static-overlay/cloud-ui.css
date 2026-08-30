@@ -326,6 +326,12 @@ body.board-page{
     width:100%;
     touch-action:none;
   }
+  body.player-page .nav,
+  body.player-page .floating-dock,
+  body.player-page .chenfu-board-layer,
+  body.player-page a[href*="board"]{
+    touch-action:manipulation;
+  }
   body.player-page .foot{display:none}
   body.player-page .player-shell{
     position:fixed;
@@ -543,6 +549,11 @@ body.board-page{
 .chenfu-board-frame{
   flex:1;width:100%;border:0;background:#07090b;min-height:0;
 }
+.chenfu-board-mount{
+  flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;
+  padding-top:16px;padding-bottom:40px;
+}
+.chenfu-board-layer .board-nav{top:8px}
 body.chenfu-board-open .floating-dock{visibility:hidden !important}
 html.board-embed .nav,
 body.board-embed .nav{display:none !important}

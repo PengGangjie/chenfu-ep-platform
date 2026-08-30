@@ -1,20 +1,24 @@
 (function () {
-  var params = new URLSearchParams(location.search);
+  function chenfuMountBoard(root, opts) {
+  if (!root) return;
+  opts = opts || {};
+  var params = new URLSearchParams(
+    opts.search != null ? String(opts.search).replace(/^\?/, "") : location.search
+  );
+  if (opts.song) params.set("song", opts.song);
+  if (opts.section) params.set("section", opts.section);
   var song = params.get("song") || "";
   var sectionRaw = params.get("section");
   var section = sectionRaw !== null ? sectionRaw : song ? "" : "dev";
-  var embed = params.get("embed") === "1" || window.parent !== window;
+  var embed = opts.embed === true || params.get("embed") === "1";
   if (embed) {
-    document.documentElement.classList.add("board-embed");
-    if (document.body) document.body.classList.add("board-embed");
+    root.classList.add("board-embed");
   }
   if (sectionRaw === null && !song && section === "dev" && !embed) {
     var initUrl = new URL(location.href);
     initUrl.searchParams.set("section", "dev");
     history.replaceState({}, "", initUrl);
   }
-  var root = document.getElementById("boardApp");
-  if (!root) return;
 
   var boardData = null;
   var loadSeq = 0;
@@ -108,12 +112,14 @@
   function setView(nextSong, nextSection) {
     song = nextSong || "";
     section = nextSection || "";
-    var u = new URL(location.href);
-    if (song) u.searchParams.set("song", song);
-    else u.searchParams.delete("song");
-    if (section) u.searchParams.set("section", section);
-    else u.searchParams.delete("section");
-    history.replaceState({}, "", u);
+    if (!embed) {
+      var u = new URL(location.href);
+      if (song) u.searchParams.set("song", song);
+      else u.searchParams.delete("song");
+      if (section) u.searchParams.set("section", section);
+      else u.searchParams.delete("section");
+      history.replaceState({}, "", u);
+    }
     load();
   }
 
@@ -870,8 +876,9 @@
   ensureShell();
   load();
 
-  if (embed) {
-    document.addEventListener(
+  if (embed && !root.dataset.chenfuPlayerBridge) {
+    root.dataset.chenfuPlayerBridge = "1";
+    root.addEventListener(
       "click",
       function (ev) {
         var a = ev.target && ev.target.closest ? ev.target.closest("a") : null;
@@ -880,14 +887,18 @@
         if (href.indexOf("player.html") < 0) return;
         ev.preventDefault();
         ev.stopPropagation();
-        try {
-          window.parent.postMessage(
-            { type: "chenfu-board-to-player", href: a.href },
-            location.origin
-          );
-        } catch (e) {}
+        if (window.chenfuOnBoardPlayer) window.chenfuOnBoardPlayer(a.href);
       },
       true
     );
+  }
+  }
+
+  window.chenfuMountBoard = chenfuMountBoard;
+  var boot = document.getElementById("boardApp");
+  if (boot) {
+    chenfuMountBoard(boot, {
+      embed: new URLSearchParams(location.search).get("embed") === "1"
+    });
   }
 })();

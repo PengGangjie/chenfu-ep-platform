@@ -657,13 +657,13 @@
     try {
       var u = new URL(href, location.origin);
       if (u.pathname.indexOf("board") < 0) u = new URL("/board.html", location.origin);
-      u.searchParams.set("embed", "1");
+      u.searchParams.delete("embed");
       if (!u.searchParams.get("section") && !u.searchParams.get("song")) {
         u.searchParams.set("section", "dev");
       }
-      return u.pathname + u.search;
+      return u.search || "?section=dev";
     } catch (e) {
-      return "/board.html?section=dev&embed=1";
+      return "?section=dev";
     }
   }
 
@@ -684,25 +684,73 @@
     }
   }
 
+  function resumeIfWasPlaying() {
+    var audio = document.getElementById("audio");
+    var layer = document.getElementById("chenfuBoardLayer");
+    if (!audio || !layer || layer.dataset.wasPlaying !== "1") return;
+    if (audio.paused) audio.play().catch(function () {});
+  }
+
   function closeBoardOverlay() {
     var layer = document.getElementById("chenfuBoardLayer");
     if (!layer) return;
     layer.classList.remove("is-on");
-    layer.setAttribute("hidden", "");
     document.body.classList.remove("chenfu-board-open");
     layer.setAttribute("aria-hidden", "true");
+    resumeIfWasPlaying();
+  }
+
+  function boardScriptSrc() {
+    var ver = "";
+    document.querySelectorAll("script[src*='cloud-player.js']").forEach(function (el) {
+      var m = (el.getAttribute("src") || "").match(/[?&]v=([^&]+)/);
+      if (m) ver = m[1];
+    });
+    return "/cloud-board.js" + (ver ? "?v=" + ver : "");
+  }
+
+  function loadBoardScript(cb) {
+    if (window.chenfuMountBoard) {
+      cb();
+      return;
+    }
+    var existing = document.querySelector("script[src*='cloud-board.js']");
+    if (existing) {
+      existing.addEventListener("load", cb);
+      return;
+    }
+    var s = document.createElement("script");
+    s.src = boardScriptSrc();
+    s.onload = cb;
+    s.onerror = cb;
+    document.body.appendChild(s);
+  }
+
+  function mountBoardIntoOverlay(search) {
+    var mount = document.getElementById("chenfuBoardMount");
+    if (!mount || !window.chenfuMountBoard) return;
+    if (mount.dataset.chenfuSearch === search && mount.querySelector("#boardNav")) return;
+    mount.dataset.chenfuSearch = search;
+    mount.innerHTML = "";
+    window.chenfuMountBoard(mount, { embed: true, search: search });
   }
 
   function openBoardOverlay(href) {
+    var audio = document.getElementById("audio");
     var layer = ensureBoardLayer();
-    var frame = document.getElementById("chenfuBoardFrame");
-    var src = boardSrcFromHref(href || "/board.html?section=dev");
-    if (frame && frame.getAttribute("src") !== src) frame.src = src;
+    layer.dataset.wasPlaying = audio && !audio.paused ? "1" : "0";
+    var search = boardSrcFromHref(href || "/board.html?section=dev");
     layer.classList.add("is-on");
-    layer.removeAttribute("hidden");
     layer.setAttribute("aria-hidden", "false");
     document.body.classList.add("chenfu-board-open");
     paintNowPlay();
+    loadBoardScript(function () {
+      mountBoardIntoOverlay(search);
+      paintNowPlay();
+      resumeIfWasPlaying();
+    });
+    setTimeout(resumeIfWasPlaying, 300);
+    setTimeout(resumeIfWasPlaying, 1000);
   }
 
   function ensureBoardLayer() {
@@ -711,7 +759,6 @@
     layer = document.createElement("div");
     layer.id = "chenfuBoardLayer";
     layer.className = "chenfu-board-layer";
-    layer.setAttribute("hidden", "");
     layer.setAttribute("aria-hidden", "true");
     layer.innerHTML =
       '<div class="chenfu-nowplay" id="chenfuNowPlay">' +
@@ -724,7 +771,7 @@
       "</span>" +
       '<span class="chenfu-nowplay-go">返回歌词卡</span>' +
       "</button></div>" +
-      '<iframe id="chenfuBoardFrame" class="chenfu-board-frame" title="留言板"></iframe>';
+      '<div class="board-shell chenfu-board-mount" id="chenfuBoardMount"></div>';
     document.body.appendChild(layer);
     document.getElementById("chenfuNowPlayBack").addEventListener("click", function () {
       closeBoardOverlay();
@@ -733,22 +780,23 @@
       ev.stopPropagation();
       var audio = document.getElementById("audio");
       if (!audio) return;
-      if (audio.paused) audio.play().catch(function () {});
-      else audio.pause();
+      if (audio.paused) {
+        audio.play().catch(function () {});
+        layer.dataset.wasPlaying = "1";
+      } else {
+        audio.pause();
+        layer.dataset.wasPlaying = "0";
+      }
     });
     document.addEventListener("keydown", function (ev) {
       if (ev.key === "Escape" && document.body.classList.contains("chenfu-board-open")) {
         closeBoardOverlay();
       }
     });
-    window.addEventListener("message", function (ev) {
-      if (ev.origin !== location.origin) return;
-      var data = ev.data || {};
-      if (data.type !== "chenfu-board-to-player") return;
-      var href = data.href || "";
+    window.chenfuOnBoardPlayer = function (href) {
       closeBoardOverlay();
       if (href && !isSamePlayer(href)) goToPlayer(href);
-    });
+    };
     var audio = document.getElementById("audio");
     if (audio) {
       audio.addEventListener("play", paintNowPlay);
@@ -757,23 +805,42 @@
     return layer;
   }
 
+  function isBoardHref(href) {
+    if (!href) return false;
+    href = String(href);
+    return href.indexOf("board.html") >= 0 || href === "/board" || /\/board(\?|#|$)/.test(href);
+  }
+
   function bindBoardOverlay() {
-    document.addEventListener(
-      "click",
-      function (ev) {
-        if (ev.defaultPrevented) return;
-        if (ev.button && ev.button !== 0) return;
-        if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
-        var a = ev.target && ev.target.closest ? ev.target.closest("a") : null;
-        if (!a) return;
-        var href = a.getAttribute("href") || "";
-        if (href.indexOf("board.html") < 0 && href !== "/board") return;
-        ev.preventDefault();
-        ev.stopPropagation();
-        openBoardOverlay(a.href || href);
-      },
-      true
-    );
+    window.chenfuOpenBoard = openBoardOverlay;
+    if (window.__chenfuBoardPending) {
+      var pending = window.__chenfuBoardPending;
+      window.__chenfuBoardPending = null;
+      openBoardOverlay(pending);
+    }
+    var last = 0;
+    function intercept(ev) {
+      if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+      if (ev.button && ev.button !== 0) return;
+      var t = ev.target;
+      if (t && t.closest && t.closest("#chenfuBoardLayer")) return;
+      var a = t && t.closest ? t.closest("a") : null;
+      if (!a) return;
+      var href = a.getAttribute("href") || "";
+      if (!isBoardHref(href) && !isBoardHref(a.href)) return;
+      ev.preventDefault();
+      if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+      ev.stopPropagation();
+      var now = Date.now();
+      if (window.__chenfuBoardOpenAt && now - window.__chenfuBoardOpenAt < 400) return;
+      if (now - last < 400) return;
+      last = now;
+      window.__chenfuBoardOpenAt = now;
+      openBoardOverlay(a.href || href);
+    }
+    document.addEventListener("pointerdown", intercept, true);
+    document.addEventListener("click", intercept, true);
+    document.addEventListener("touchend", intercept, true);
   }
 
   function injectDock() {
