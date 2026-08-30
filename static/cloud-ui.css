@@ -559,3 +559,9 @@ html.board-embed .nav,
 body.board-embed .nav{display:none !important}
 html.board-embed .board-shell,
 body.board-embed .board-shell{padding-top:20px}
+html.chenfu-embed .nav,
+html.chenfu-embed .floating-dock,
+body.chenfu-embed .nav,
+body.chenfu-embed .floating-dock{display:none !important}
+html.chenfu-embed body.hub-page .nav,
+body.chenfu-embed.hub-page .nav{display:none !important}

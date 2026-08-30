@@ -126,7 +126,27 @@
     return href.indexOf("board.html") >= 0 || href === "/board" || /\/board(\?|#|$)/.test(href);
   }
 
-  function interceptBoardWhilePlaying(ev) {
+  function stayPlayKind(a) {
+    if (!a) return "";
+    var href = a.getAttribute("href") || "";
+    var abs = a.href || "";
+    if (href === "#play" || href.indexOf("#play") === 0) return "";
+    if (isBoardHref(href) || isBoardHref(abs)) return "board";
+    if (href.indexOf("player.html") >= 0 || abs.indexOf("player.html") >= 0) return "";
+    try {
+      var u = new URL(abs, location.origin);
+      if (u.origin !== location.origin) return "";
+      var path = decodeURIComponent(u.pathname || "/");
+      if (!path || path === "/") return "hub";
+      if (path === "/index.html") return "hub";
+      if (path.indexOf("player.html") >= 0) return "";
+      if (/\/(饵_ep|鲨鱼_EP_5\.1|潜水艇_ep|火山群岛_ep)(\/|$)/.test(path)) return "chapter";
+      if (/\/index\.html$/i.test(path)) return "hub";
+    } catch (e) {}
+    return "";
+  }
+
+  function interceptStayWhilePlaying(ev) {
     if (!document.getElementById("audio")) return;
     if (document.body && document.body.classList.contains("board-page")) return;
     if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
@@ -135,7 +155,8 @@
     if (t && t.closest && t.closest("#chenfuBoardLayer")) return;
     var a = t && t.closest ? t.closest("a") : null;
     if (!a) return;
-    if (!isBoardHref(a.getAttribute("href") || "") && !isBoardHref(a.href)) return;
+    var kind = stayPlayKind(a);
+    if (!kind) return;
     ev.preventDefault();
     if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
     ev.stopPropagation();
@@ -143,9 +164,38 @@
     var now = Date.now();
     if (window.__chenfuBoardOpenAt && now - window.__chenfuBoardOpenAt < 400) return;
     window.__chenfuBoardOpenAt = now;
-    if (window.chenfuOpenBoard) window.chenfuOpenBoard(href);
-    else window.__chenfuBoardPending = href;
+    if (window.chenfuOpenStay) window.chenfuOpenStay(kind, href);
+    else if (kind === "board" && window.chenfuOpenBoard) window.chenfuOpenBoard(href);
+    else window.__chenfuStayPending = { kind: kind, href: href };
   }
-  document.addEventListener("pointerdown", interceptBoardWhilePlaying, true);
-  document.addEventListener("click", interceptBoardWhilePlaying, true);
+
+  try {
+    if (window.parent !== window) {
+      document.documentElement.classList.add("chenfu-embed");
+      if (document.body) document.body.classList.add("chenfu-embed");
+      document.addEventListener(
+        "click",
+        function (ev) {
+          var a = ev.target && ev.target.closest ? ev.target.closest("a") : null;
+          if (!a) return;
+          var href = a.getAttribute("href") || "";
+          if (href.indexOf("player.html") >= 0 || (a.href && a.href.indexOf("player.html") >= 0)) {
+            ev.preventDefault();
+            if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+            if (window.parent.chenfuOnBoardPlayer) window.parent.chenfuOnBoardPlayer(a.href);
+            return;
+          }
+          if (isBoardHref(href) || isBoardHref(a.href)) {
+            ev.preventDefault();
+            if (window.parent.chenfuOpenStay) window.parent.chenfuOpenStay("board", a.href);
+            else if (window.parent.chenfuOpenBoard) window.parent.chenfuOpenBoard(a.href);
+          }
+        },
+        true
+      );
+    }
+  } catch (e) {}
+
+  document.addEventListener("pointerdown", interceptStayWhilePlaying, true);
+  document.addEventListener("click", interceptStayWhilePlaying, true);
 })();

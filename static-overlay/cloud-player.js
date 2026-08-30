@@ -735,22 +735,81 @@
     window.chenfuMountBoard(mount, { embed: true, search: search });
   }
 
-  function openBoardOverlay(href) {
+  function isBoardHref(href) {
+    if (!href) return false;
+    href = String(href);
+    return href.indexOf("board.html") >= 0 || href === "/board" || /\/board(\?|#|$)/.test(href);
+  }
+
+  function stayPlayKind(a) {
+    if (!a) return "";
+    var href = a.getAttribute("href") || "";
+    var abs = a.href || "";
+    if (href === "#play" || href.indexOf("#play") === 0) return "";
+    if (isBoardHref(href) || isBoardHref(abs)) return "board";
+    if (href.indexOf("player.html") >= 0 || abs.indexOf("player.html") >= 0) return "";
+    try {
+      var u = new URL(abs, location.origin);
+      if (u.origin !== location.origin) return "";
+      var path = decodeURIComponent(u.pathname || "/");
+      if (!path || path === "/") return "hub";
+      if (path === "/index.html") return "hub";
+      if (path.indexOf("player.html") >= 0) return "";
+      if (/\/(饵_ep|鲨鱼_EP_5\.1|潜水艇_ep|火山群岛_ep)(\/|$)/.test(path)) return "chapter";
+      if (/\/index\.html$/i.test(path)) return "hub";
+    } catch (e) {}
+    return "";
+  }
+
+  function withEmbedParam(href) {
+    try {
+      var u = new URL(href, location.origin);
+      u.searchParams.set("chenfu_embed", "1");
+      return u.pathname + u.search + u.hash;
+    } catch (e) {
+      return href;
+    }
+  }
+
+  function showStayPane(kind) {
+    var mount = document.getElementById("chenfuBoardMount");
+    var frame = document.getElementById("chenfuStayFrame");
+    var board = kind === "board";
+    if (mount) mount.hidden = !board;
+    if (frame) frame.hidden = board;
+  }
+
+  function openStayOverlay(kind, href) {
+    if (!kind) kind = "board";
     var audio = document.getElementById("audio");
     var layer = ensureBoardLayer();
     layer.dataset.wasPlaying = audio && !audio.paused ? "1" : "0";
-    var search = boardSrcFromHref(href || "/board.html?section=dev");
     layer.classList.add("is-on");
     layer.setAttribute("aria-hidden", "false");
     document.body.classList.add("chenfu-board-open");
     paintNowPlay();
-    loadBoardScript(function () {
-      mountBoardIntoOverlay(search);
-      paintNowPlay();
-      resumeIfWasPlaying();
-    });
+    showStayPane(kind);
+    if (kind === "board") {
+      var search = boardSrcFromHref(href || "/board.html?section=dev");
+      loadBoardScript(function () {
+        mountBoardIntoOverlay(search);
+        paintNowPlay();
+        resumeIfWasPlaying();
+      });
+    } else {
+      var frame = document.getElementById("chenfuStayFrame");
+      var src = withEmbedParam(href);
+      if (frame) {
+        frame.title = kind === "hub" ? "《沉浮》" : "章节";
+        if (frame.getAttribute("src") !== src) frame.src = src;
+      }
+    }
     setTimeout(resumeIfWasPlaying, 300);
     setTimeout(resumeIfWasPlaying, 1000);
+  }
+
+  function openBoardOverlay(href) {
+    openStayOverlay("board", href);
   }
 
   function ensureBoardLayer() {
@@ -771,8 +830,13 @@
       "</span>" +
       '<span class="chenfu-nowplay-go">返回歌词卡</span>' +
       "</button></div>" +
-      '<div class="board-shell chenfu-board-mount" id="chenfuBoardMount"></div>';
+      '<div class="board-shell chenfu-board-mount" id="chenfuBoardMount" hidden></div>' +
+      '<iframe id="chenfuStayFrame" class="chenfu-board-frame" hidden title="浏览"></iframe>';
     document.body.appendChild(layer);
+    var stayFrame = document.getElementById("chenfuStayFrame");
+    if (stayFrame) {
+      stayFrame.addEventListener("load", resumeIfWasPlaying);
+    }
     document.getElementById("chenfuNowPlayBack").addEventListener("click", function () {
       closeBoardOverlay();
     });
@@ -797,6 +861,7 @@
       closeBoardOverlay();
       if (href && !isSamePlayer(href)) goToPlayer(href);
     };
+    window.chenfuOpenStay = openStayOverlay;
     var audio = document.getElementById("audio");
     if (audio) {
       audio.addEventListener("play", paintNowPlay);
@@ -805,15 +870,14 @@
     return layer;
   }
 
-  function isBoardHref(href) {
-    if (!href) return false;
-    href = String(href);
-    return href.indexOf("board.html") >= 0 || href === "/board" || /\/board(\?|#|$)/.test(href);
-  }
-
   function bindBoardOverlay() {
     window.chenfuOpenBoard = openBoardOverlay;
-    if (window.__chenfuBoardPending) {
+    window.chenfuOpenStay = openStayOverlay;
+    if (window.__chenfuStayPending) {
+      var stay = window.__chenfuStayPending;
+      window.__chenfuStayPending = null;
+      openStayOverlay(stay.kind, stay.href);
+    } else if (window.__chenfuBoardPending) {
       var pending = window.__chenfuBoardPending;
       window.__chenfuBoardPending = null;
       openBoardOverlay(pending);
@@ -826,8 +890,8 @@
       if (t && t.closest && t.closest("#chenfuBoardLayer")) return;
       var a = t && t.closest ? t.closest("a") : null;
       if (!a) return;
-      var href = a.getAttribute("href") || "";
-      if (!isBoardHref(href) && !isBoardHref(a.href)) return;
+      var kind = stayPlayKind(a);
+      if (!kind) return;
       ev.preventDefault();
       if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
       ev.stopPropagation();
@@ -836,7 +900,7 @@
       if (now - last < 400) return;
       last = now;
       window.__chenfuBoardOpenAt = now;
-      openBoardOverlay(a.href || href);
+      openStayOverlay(kind, a.href || a.getAttribute("href") || "");
     }
     document.addEventListener("pointerdown", intercept, true);
     document.addEventListener("click", intercept, true);
