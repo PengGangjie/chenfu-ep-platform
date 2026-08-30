@@ -328,19 +328,13 @@
   }
   window.chenfuOnTrackEnded = onTrackEnded;
 
-  function tryAutoplayFromQuery() {
-    var want = false;
-    try {
-      want =
-        new URLSearchParams(location.search).get("autoplay") === "1" ||
-        sessionStorage.getItem("chenfu_autoplay") === "1";
-    } catch (e) {}
-    if (!want) return;
+  function tryAutoplayOnEnter() {
     var audio = document.getElementById("audio");
     if (!audio) return;
     audio.preload = "auto";
     audio.autoplay = true;
     audio.setAttribute("autoplay", "");
+    audio.setAttribute("playsinline", "");
     var started = false;
     function clearFlag() {
       try {
@@ -365,7 +359,7 @@
           clearFlag();
         }).catch(function () {
           var hint = document.getElementById("audioHint");
-          if (hint) hint.textContent = "下一首已就绪，点播放继续。";
+          if (hint) hint.textContent = "已就绪，点一下即可开声。";
           armGestureRetry();
         });
       }
@@ -374,10 +368,11 @@
       started = true;
       clearFlag();
     });
-    if (audio.readyState >= 2) start();
+    start();
     audio.addEventListener("canplay", start, { once: true });
     audio.addEventListener("loadeddata", start, { once: true });
     setTimeout(start, 400);
+    setTimeout(start, 1200);
   }
 
   function setLoop(on) {
@@ -852,7 +847,7 @@
   watchAudio();
   setLoop(loopOne);
   setShuffle(shuffleMode);
-  tryAutoplayFromQuery();
+  tryAutoplayOnEnter();
   deferIdle(function () {
     loadSocial();
     ensureComposer();

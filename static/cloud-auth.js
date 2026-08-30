@@ -87,4 +87,36 @@
       });
     })
     .catch(function () {});
+
+  function markEnterPlayer(href) {
+    if (!href || href.indexOf("player.html") < 0) return;
+    try {
+      sessionStorage.setItem("chenfu_autoplay", "1");
+    } catch (e) {}
+  }
+
+  function withAutoplay(href) {
+    if (!href || href.indexOf("player.html") < 0 || href.indexOf("autoplay=") >= 0) return href;
+    return href + (href.indexOf("?") >= 0 ? "&" : "?") + "autoplay=1";
+  }
+
+  function preparePlayerLinks() {
+    document.querySelectorAll('a[href*="player.html"]').forEach(function (a) {
+      var href = a.getAttribute("href") || "";
+      var next = withAutoplay(href);
+      if (next !== href) a.setAttribute("href", next);
+    });
+  }
+
+  document.addEventListener("click", function (ev) {
+    var a = ev.target && ev.target.closest ? ev.target.closest('a[href*="player.html"]') : null;
+    if (!a) return;
+    markEnterPlayer(a.getAttribute("href") || a.href || "");
+  }, true);
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", preparePlayerLinks);
+  } else {
+    preparePlayerLinks();
+  }
 })();
