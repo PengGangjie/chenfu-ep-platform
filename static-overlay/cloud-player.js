@@ -1,9 +1,9 @@
 (function () {
   var SONGS = [
-    { id: "bait", test: /饵/, player: "/《饵》/饵_ep/player.html" },
-    { id: "shark", test: /鲨鱼/, player: "/《鲨鱼》/鲨鱼_EP_5.1/player.html" },
-    { id: "sub", test: /潜水艇/, player: "/《潜水艇》/潜水艇_ep/player.html" },
-    { id: "volcano", test: /火山群岛/, player: "/《火山群岛》/火山群岛_ep/player.html" }
+    { id: "bait", title: "饵", test: /饵/, player: "/《饵》/饵_ep/player.html" },
+    { id: "shark", title: "鲨鱼", test: /鲨鱼/, player: "/《鲨鱼》/鲨鱼_EP_5.1/player.html" },
+    { id: "sub", title: "潜水艇", test: /潜水艇/, player: "/《潜水艇》/潜水艇_ep/player.html" },
+    { id: "volcano", title: "火山群岛", test: /火山群岛/, player: "/《火山群岛》/火山群岛_ep/player.html" }
   ];
 
   function songIdFromPath() {
@@ -637,6 +637,145 @@
     });
   }
 
+  function songTitle() {
+    for (var i = 0; i < SONGS.length; i++) {
+      if (SONGS[i].id === songId) return SONGS[i].title || songId;
+    }
+    return songId || "沉浮";
+  }
+
+  function isSamePlayer(href) {
+    try {
+      var u = new URL(href, location.origin);
+      return decodeURIComponent(u.pathname) === decodeURIComponent(location.pathname);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function boardSrcFromHref(href) {
+    try {
+      var u = new URL(href, location.origin);
+      if (u.pathname.indexOf("board") < 0) u = new URL("/board.html", location.origin);
+      u.searchParams.set("embed", "1");
+      if (!u.searchParams.get("section") && !u.searchParams.get("song")) {
+        u.searchParams.set("section", "dev");
+      }
+      return u.pathname + u.search;
+    } catch (e) {
+      return "/board.html?section=dev&embed=1";
+    }
+  }
+
+  function paintNowPlay() {
+    var layer = document.getElementById("chenfuBoardLayer");
+    if (!layer) return;
+    var audio = document.getElementById("audio");
+    var paused = !audio || audio.paused;
+    layer.classList.toggle("is-paused", paused);
+    var title = document.getElementById("chenfuNowPlayTitle");
+    if (title) title.textContent = songTitle();
+    var kicker = document.getElementById("chenfuNowPlayKicker");
+    if (kicker) kicker.textContent = paused ? "已暂停" : "正在播放";
+    var tog = document.getElementById("chenfuNowPlayToggle");
+    if (tog) {
+      tog.textContent = paused ? "▶" : "❚❚";
+      tog.setAttribute("aria-label", paused ? "继续播放" : "暂停");
+    }
+  }
+
+  function closeBoardOverlay() {
+    var layer = document.getElementById("chenfuBoardLayer");
+    if (!layer) return;
+    layer.classList.remove("is-on");
+    layer.setAttribute("hidden", "");
+    document.body.classList.remove("chenfu-board-open");
+    layer.setAttribute("aria-hidden", "true");
+  }
+
+  function openBoardOverlay(href) {
+    var layer = ensureBoardLayer();
+    var frame = document.getElementById("chenfuBoardFrame");
+    var src = boardSrcFromHref(href || "/board.html?section=dev");
+    if (frame && frame.getAttribute("src") !== src) frame.src = src;
+    layer.classList.add("is-on");
+    layer.removeAttribute("hidden");
+    layer.setAttribute("aria-hidden", "false");
+    document.body.classList.add("chenfu-board-open");
+    paintNowPlay();
+  }
+
+  function ensureBoardLayer() {
+    var layer = document.getElementById("chenfuBoardLayer");
+    if (layer) return layer;
+    layer = document.createElement("div");
+    layer.id = "chenfuBoardLayer";
+    layer.className = "chenfu-board-layer";
+    layer.setAttribute("hidden", "");
+    layer.setAttribute("aria-hidden", "true");
+    layer.innerHTML =
+      '<div class="chenfu-nowplay" id="chenfuNowPlay">' +
+      '<button type="button" class="chenfu-nowplay-pp" id="chenfuNowPlayToggle" aria-label="暂停">❚❚</button>' +
+      '<button type="button" class="chenfu-nowplay-back" id="chenfuNowPlayBack">' +
+      '<span class="chenfu-nowplay-eq" aria-hidden="true"><i></i><i></i><i></i></span>' +
+      '<span class="chenfu-nowplay-copy">' +
+      '<span class="chenfu-nowplay-kicker" id="chenfuNowPlayKicker">正在播放</span>' +
+      '<span class="chenfu-nowplay-title" id="chenfuNowPlayTitle"></span>' +
+      "</span>" +
+      '<span class="chenfu-nowplay-go">返回歌词卡</span>' +
+      "</button></div>" +
+      '<iframe id="chenfuBoardFrame" class="chenfu-board-frame" title="留言板"></iframe>';
+    document.body.appendChild(layer);
+    document.getElementById("chenfuNowPlayBack").addEventListener("click", function () {
+      closeBoardOverlay();
+    });
+    document.getElementById("chenfuNowPlayToggle").addEventListener("click", function (ev) {
+      ev.stopPropagation();
+      var audio = document.getElementById("audio");
+      if (!audio) return;
+      if (audio.paused) audio.play().catch(function () {});
+      else audio.pause();
+    });
+    document.addEventListener("keydown", function (ev) {
+      if (ev.key === "Escape" && document.body.classList.contains("chenfu-board-open")) {
+        closeBoardOverlay();
+      }
+    });
+    window.addEventListener("message", function (ev) {
+      if (ev.origin !== location.origin) return;
+      var data = ev.data || {};
+      if (data.type !== "chenfu-board-to-player") return;
+      var href = data.href || "";
+      closeBoardOverlay();
+      if (href && !isSamePlayer(href)) goToPlayer(href);
+    });
+    var audio = document.getElementById("audio");
+    if (audio) {
+      audio.addEventListener("play", paintNowPlay);
+      audio.addEventListener("pause", paintNowPlay);
+    }
+    return layer;
+  }
+
+  function bindBoardOverlay() {
+    document.addEventListener(
+      "click",
+      function (ev) {
+        if (ev.defaultPrevented) return;
+        if (ev.button && ev.button !== 0) return;
+        if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+        var a = ev.target && ev.target.closest ? ev.target.closest("a") : null;
+        if (!a) return;
+        var href = a.getAttribute("href") || "";
+        if (href.indexOf("board.html") < 0 && href !== "/board") return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        openBoardOverlay(a.href || href);
+      },
+      true
+    );
+  }
+
   function injectDock() {
     var dock = document.querySelector(".floating-dock");
     if (!dock || dock.querySelector("[data-cloud-board]")) return;
@@ -842,6 +981,7 @@
   ensureNextBtn();
   ensureShuffleBtn();
   injectDock();
+  bindBoardOverlay();
   scheduleDecorate();
   bindLyricsBrowse();
   watchAudio();

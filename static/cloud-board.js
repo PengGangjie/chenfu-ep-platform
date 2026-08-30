@@ -3,7 +3,12 @@
   var song = params.get("song") || "";
   var sectionRaw = params.get("section");
   var section = sectionRaw !== null ? sectionRaw : song ? "" : "dev";
-  if (sectionRaw === null && !song && section === "dev") {
+  var embed = params.get("embed") === "1" || window.parent !== window;
+  if (embed) {
+    document.documentElement.classList.add("board-embed");
+    if (document.body) document.body.classList.add("board-embed");
+  }
+  if (sectionRaw === null && !song && section === "dev" && !embed) {
     var initUrl = new URL(location.href);
     initUrl.searchParams.set("section", "dev");
     history.replaceState({}, "", initUrl);
@@ -864,4 +869,25 @@
 
   ensureShell();
   load();
+
+  if (embed) {
+    document.addEventListener(
+      "click",
+      function (ev) {
+        var a = ev.target && ev.target.closest ? ev.target.closest("a") : null;
+        if (!a) return;
+        var href = a.getAttribute("href") || "";
+        if (href.indexOf("player.html") < 0) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        try {
+          window.parent.postMessage(
+            { type: "chenfu-board-to-player", href: a.href },
+            location.origin
+          );
+        } catch (e) {}
+      },
+      true
+    );
+  }
 })();

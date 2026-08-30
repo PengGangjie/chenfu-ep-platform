@@ -485,3 +485,66 @@ body.board-page{
     z-index:80;
   }
 }
+
+/* —— 播放页叠留言板：不卸音频 —— */
+.chenfu-board-layer{
+  position:fixed;inset:0;z-index:200;
+  display:none;flex-direction:column;
+  background:#07090b;
+  padding-top:env(safe-area-inset-top, 0px);
+}
+.chenfu-board-layer.is-on{display:flex}
+.chenfu-nowplay{
+  flex:0 0 auto;
+  display:flex;align-items:stretch;
+  min-height:52px;
+  background:#111418;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.chenfu-nowplay-pp{
+  flex:0 0 52px;border:0;background:transparent;color:#f5f7fa;
+  font-size:14px;cursor:pointer;letter-spacing:0;
+}
+.chenfu-nowplay-pp:hover{background:rgba(255,255,255,.06)}
+.chenfu-nowplay-back{
+  flex:1;min-width:0;display:flex;align-items:center;gap:12px;
+  border:0;background:transparent;color:#f5f7fa;cursor:pointer;
+  text-align:left;font:inherit;padding:8px 16px 8px 0;
+}
+.chenfu-nowplay-back:hover{background:rgba(255,255,255,.04)}
+.chenfu-nowplay-eq{
+  display:inline-flex;align-items:flex-end;gap:3px;height:14px;flex-shrink:0;
+}
+.chenfu-nowplay-eq i{
+  display:block;width:3px;height:14px;border-radius:1px;background:#9fe8ff;
+  transform-origin:center bottom;
+  animation:chenfuEq 0.9s ease-in-out infinite;
+}
+.chenfu-nowplay-eq i:nth-child(2){animation-delay:.18s;height:10px}
+.chenfu-nowplay-eq i:nth-child(3){animation-delay:.36s;height:16px}
+.chenfu-board-layer.is-paused .chenfu-nowplay-eq i{animation:none;opacity:.35;height:4px !important}
+@keyframes chenfuEq{
+  0%,100%{transform:scaleY(.35)}
+  50%{transform:scaleY(1)}
+}
+.chenfu-nowplay-copy{
+  display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-width:0;
+}
+.chenfu-nowplay-kicker{
+  font-size:10px;letter-spacing:.16em;text-transform:uppercase;opacity:.5;
+}
+.chenfu-nowplay-title{
+  font-size:15px;font-weight:600;letter-spacing:.06em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52vw;
+}
+.chenfu-nowplay-go{
+  margin-left:auto;flex-shrink:0;font-size:12px;opacity:.62;white-space:nowrap;
+}
+.chenfu-board-frame{
+  flex:1;width:100%;border:0;background:#07090b;min-height:0;
+}
+body.chenfu-board-open .floating-dock{visibility:hidden !important}
+html.board-embed .nav,
+body.board-embed .nav{display:none !important}
+html.board-embed .board-shell,
+body.board-embed .board-shell{padding-top:20px}
