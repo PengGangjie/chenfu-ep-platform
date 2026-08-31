@@ -230,6 +230,14 @@
   }
 
   function ensureBootAudio() {
+    if (window.parent !== window) {
+      try {
+        if (window.parent.chenfuBootAudioEl) {
+          var parentBoot = window.parent.chenfuBootAudioEl();
+          if (parentBoot) return parentBoot;
+        }
+      } catch (e) {}
+    }
     var boot = document.getElementById("chenfuBootAudio");
     if (boot) {
       window.__chenfuBootAudio = boot;
@@ -301,7 +309,28 @@
     }
   }
 
+  function samePlayerDest(a, b) {
+    try {
+      var ua = new URL(a, location.origin);
+      var ub = new URL(b, location.origin);
+      return (
+        decodeURIComponent(ua.pathname) === decodeURIComponent(ub.pathname) &&
+        ua.search === ub.search
+      );
+    } catch (e) {
+      return String(a || "") === String(b || "");
+    }
+  }
+
   function openPlayerInPlace(href) {
+    if (window.parent !== window) {
+      try {
+        if (window.parent.chenfuOpenPlayer) {
+          window.parent.chenfuOpenPlayer(href);
+          return;
+        }
+      } catch (e0) {}
+    }
     if (!href || !isPlayerHref(href)) return;
     var url;
     try {
@@ -339,7 +368,7 @@
     if (document.body) document.body.classList.add("chenfu-live-player-on");
     var iframe = document.getElementById("chenfuLiveFrame");
     var nextSrc = dest;
-    if (iframe.getAttribute("src") !== nextSrc) iframe.src = nextSrc;
+    if (!samePlayerDest(iframe.getAttribute("src") || "", nextSrc)) iframe.src = nextSrc;
     try {
       if (!(history.state && history.state.chenfuLive)) {
         history.pushState({ chenfuLive: 1 }, "", dest);
