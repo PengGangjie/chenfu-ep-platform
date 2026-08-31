@@ -108,11 +108,190 @@
     });
   }
 
-  document.addEventListener("click", function (ev) {
-    var a = ev.target && ev.target.closest ? ev.target.closest('a[href*="player.html"]') : null;
+  function playerPath(href) {
+    try {
+      return decodeURIComponent(new URL(href, location.origin).pathname);
+    } catch (e) {
+      return String(href || "");
+    }
+  }
+
+  function isPlayerHref(href) {
+    href = String(href || "");
+    return href.indexOf("player.html") >= 0;
+  }
+
+  function isSamePlayerHref(href) {
+    if (!href || !isPlayerHref(href)) return false;
+    try {
+      var a = new URL(href, location.origin);
+      var b = new URL(location.href);
+      return decodeURIComponent(a.pathname) === decodeURIComponent(b.pathname);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function mp3ForPlayer(href) {
+    var path = playerPath(href);
+    var map = [
+      ["饵_ep", "/《饵》/饵_ep/assets/audio/饵_v34_A.mp3"],
+      ["鲨鱼_EP_5.1", "/《鲨鱼》/鲨鱼_EP_5.1/assets/audio/鲨鱼_5.1_Cover_A_t12.mp3"],
+      ["潜水艇_ep", "/《潜水艇》/潜水艇_ep/assets/audio/潜水艇3.0_A.mp3"],
+      ["火山群岛_ep", "/《火山群岛》/火山群岛_ep/assets/audio/火山群岛_v2fresh_A.mp3"]
+    ];
+    for (var i = 0; i < map.length; i++) {
+      if (path.indexOf(map[i][0]) >= 0) {
+        try {
+          return encodeURI(map[i][1]);
+        } catch (e) {
+          return map[i][1];
+        }
+      }
+    }
+    return "";
+  }
+
+  function ensureBootAudio() {
+    var boot = document.getElementById("chenfuBootAudio");
+    if (boot) return boot;
+    boot = document.createElement("audio");
+    boot.id = "chenfuBootAudio";
+    boot.setAttribute("playsinline", "");
+    boot.setAttribute("webkit-playsinline", "");
+    boot.setAttribute("preload", "auto");
+    boot.style.display = "none";
+    document.body.appendChild(boot);
+    return boot;
+  }
+
+  function playBootFor(href) {
+    var src = mp3ForPlayer(href);
+    if (!src) return null;
+    var boot = ensureBootAudio();
+    boot.setAttribute("playsinline", "");
+    boot.setAttribute("webkit-playsinline", "");
+    try {
+      var abs = new URL(src, location.origin).href;
+      if (boot.src !== abs) boot.src = src;
+    } catch (e) {
+      boot.src = src;
+    }
+    var p = boot.play();
+    if (p && p.catch) p.catch(function () {});
+    return boot;
+  }
+
+  function closeLivePlayer(useBack) {
+    var layer = document.getElementById("chenfuLivePlayer");
+    if (layer) layer.remove();
+    document.documentElement.classList.remove("chenfu-live-player-on");
+    if (document.body) document.body.classList.remove("chenfu-live-player-on");
+    var boot = document.getElementById("chenfuBootAudio");
+    if (boot && !boot.paused) boot.pause();
+    if (useBack) {
+      try {
+        if (history.state && history.state.chenfuLive) history.back();
+      } catch (e) {}
+    }
+  }
+
+  function openPlayerInPlace(href) {
+    if (!href || !isPlayerHref(href)) return;
+    var url;
+    try {
+      url = new URL(href, location.origin);
+    } catch (e) {
+      return;
+    }
+    url.searchParams.set("autoplay", "1");
+    var dest = url.pathname + url.search + url.hash;
+    markEnterPlayer(dest);
+
+    if (isSamePlayerHref(href) && document.getElementById("audio") && !document.getElementById("chenfuLivePlayer")) {
+      var local = document.getElementById("audio");
+      local.setAttribute("playsinline", "");
+      local.play().catch(function () {});
+      return;
+    }
+
+    playBootFor(dest);
+
+    var layer = document.getElementById("chenfuLivePlayer");
+    if (!layer) {
+      layer = document.createElement("div");
+      layer.id = "chenfuLivePlayer";
+      layer.className = "chenfu-live-player";
+      var frame = document.createElement("iframe");
+      frame.id = "chenfuLiveFrame";
+      frame.title = "歌词卡";
+      frame.setAttribute("allow", "autoplay; autoplay-media; fullscreen");
+      frame.allow = "autoplay";
+      layer.appendChild(frame);
+      document.body.appendChild(layer);
+    }
+    document.documentElement.classList.add("chenfu-live-player-on");
+    if (document.body) document.body.classList.add("chenfu-live-player-on");
+    var iframe = document.getElementById("chenfuLiveFrame");
+    var nextSrc = dest;
+    if (iframe.getAttribute("src") !== nextSrc) iframe.src = nextSrc;
+    try {
+      if (!(history.state && history.state.chenfuLive)) {
+        history.pushState({ chenfuLive: 1 }, "", dest);
+      } else {
+        history.replaceState({ chenfuLive: 1 }, "", dest);
+      }
+    } catch (e) {}
+  }
+
+  window.chenfuOpenPlayer = openPlayerInPlace;
+  window.chenfuCloseLivePlayer = closeLivePlayer;
+  window.chenfuBootAudioEl = function () {
+    return document.getElementById("chenfuBootAudio");
+  };
+
+  window.addEventListener("popstate", function () {
+    if (document.getElementById("chenfuLivePlayer")) closeLivePlayer(false);
+  });
+
+  function interceptPlayerEnter(ev) {
+    if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+    if (ev.button && ev.button !== 0) return;
+    var t = ev.target;
+    if (t && t.closest && t.closest("#chenfuLivePlayer")) return;
+    var a = t && t.closest ? t.closest("a") : null;
     if (!a) return;
-    markEnterPlayer(a.getAttribute("href") || a.href || "");
-  }, true);
+    var href = a.href || a.getAttribute("href") || "";
+    if (!isPlayerHref(href) && !isPlayerHref(a.getAttribute("href") || "")) return;
+    if ((a.getAttribute("href") || "") === "#play" || href.indexOf("#play") >= 0 && isSamePlayerHref(href)) {
+      if (document.getElementById("audio")) {
+        ev.preventDefault();
+        document.getElementById("audio").play().catch(function () {});
+      }
+      return;
+    }
+    if (window.parent !== window) {
+      try {
+        if (window.parent.chenfuOpenPlayer) {
+          ev.preventDefault();
+          if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+          ev.stopPropagation();
+          window.parent.chenfuOpenPlayer(href);
+          return;
+        }
+      } catch (e) {}
+    }
+    ev.preventDefault();
+    if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+    ev.stopPropagation();
+    var now = Date.now();
+    if (window.__chenfuPlayerOpenAt && now - window.__chenfuPlayerOpenAt < 400) return;
+    window.__chenfuPlayerOpenAt = now;
+    openPlayerInPlace(href);
+  }
+
+  document.addEventListener("pointerdown", interceptPlayerEnter, true);
+  document.addEventListener("click", interceptPlayerEnter, true);
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", preparePlayerLinks);
@@ -183,7 +362,8 @@
           if (href.indexOf("player.html") >= 0 || (a.href && a.href.indexOf("player.html") >= 0)) {
             ev.preventDefault();
             if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
-            if (window.parent.chenfuOnBoardPlayer) window.parent.chenfuOnBoardPlayer(a.href);
+            if (window.parent.chenfuOpenPlayer) window.parent.chenfuOpenPlayer(a.href);
+            else if (window.parent.chenfuOnBoardPlayer) window.parent.chenfuOnBoardPlayer(a.href);
             return;
           }
           if (isBoardHref(href) || isBoardHref(a.href)) {

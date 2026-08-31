@@ -290,6 +290,16 @@
     if (dest.indexOf("autoplay=") < 0) {
       dest += (dest.indexOf("?") >= 0 ? "&" : "?") + "autoplay=1";
     }
+    if (window.parent !== window && window.parent.chenfuOpenPlayer) {
+      window.parent.chenfuOpenPlayer(dest);
+      advancing = false;
+      return;
+    }
+    if (window.chenfuOpenPlayer) {
+      window.chenfuOpenPlayer(dest);
+      advancing = false;
+      return;
+    }
     window.location.href = encodeURI(dest);
   }
 
@@ -328,6 +338,63 @@
   }
   window.chenfuOnTrackEnded = onTrackEnded;
 
+  function parentBoot() {
+    try {
+      if (window.parent === window) return null;
+      if (window.parent.chenfuBootAudioEl) return window.parent.chenfuBootAudioEl();
+      return window.parent.document.getElementById("chenfuBootAudio");
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function hookParentBoot(audio) {
+    var boot = parentBoot();
+    if (!boot || !audio) return false;
+    audio.setAttribute("playsinline", "");
+    audio.setAttribute("webkit-playsinline", "");
+    audio.muted = true;
+    try {
+      audio.pause();
+    } catch (e) {}
+    function emit(name) {
+      try {
+        audio.dispatchEvent(new Event(name));
+      } catch (e2) {}
+    }
+    function pull() {
+      try {
+        if (Math.abs((audio.currentTime || 0) - boot.currentTime) > 0.18) {
+          audio.currentTime = boot.currentTime;
+        }
+      } catch (e3) {}
+      requestAnimationFrame(pull);
+    }
+    pull();
+    audio.play = function () {
+      return boot.play();
+    };
+    audio.pause = function () {
+      boot.pause();
+    };
+    boot.addEventListener("play", function () {
+      emit("play");
+    });
+    boot.addEventListener("pause", function () {
+      emit("pause");
+    });
+    boot.addEventListener("ended", function () {
+      emit("ended");
+    });
+    audio.addEventListener("seeked", function () {
+      try {
+        boot.currentTime = audio.currentTime;
+      } catch (e4) {}
+    });
+    if (!boot.paused) emit("play");
+    return true;
+  }
+
   function tryAutoplayOnEnter() {
     var audio = document.getElementById("audio");
     if (!audio) return;
@@ -335,22 +402,34 @@
     audio.autoplay = true;
     audio.setAttribute("autoplay", "");
     audio.setAttribute("playsinline", "");
+    audio.setAttribute("webkit-playsinline", "");
     var started = false;
+    var hooked = hookParentBoot(audio);
     function clearFlag() {
       try {
         sessionStorage.removeItem("chenfu_autoplay");
       } catch (e) {}
     }
     function armGestureRetry() {
+      document.documentElement.classList.add("chenfu-await-play");
       var once = function () {
         document.removeEventListener("pointerdown", once, true);
+        document.removeEventListener("touchstart", once, true);
         document.removeEventListener("keydown", once, true);
+        document.documentElement.classList.remove("chenfu-await-play");
         start();
       };
       document.addEventListener("pointerdown", once, true);
+      document.addEventListener("touchstart", once, true);
       document.addEventListener("keydown", once, true);
     }
     function start() {
+      var boot = parentBoot();
+      if (hooked && boot && !boot.paused) {
+        started = true;
+        clearFlag();
+        return;
+      }
       if (started && !audio.paused) return;
       var p = audio.play();
       if (p && p.then) {
@@ -358,6 +437,11 @@
           started = true;
           clearFlag();
         }).catch(function () {
+          if (boot && !boot.paused) {
+            started = true;
+            clearFlag();
+            return;
+          }
           var hint = document.getElementById("audioHint");
           if (hint) hint.textContent = "已就绪，点一下即可开声。";
           armGestureRetry();
@@ -890,7 +974,13 @@
     });
     window.chenfuOnBoardPlayer = function (href) {
       closeBoardOverlay();
-      if (href && !isSamePlayer(href)) goToPlayer(href);
+      if (href && !isSamePlayer(href)) {
+        if (window.chenfuOpenPlayer) window.chenfuOpenPlayer(href);
+        else goToPlayer(href);
+      } else {
+        var ael = document.getElementById("audio");
+        if (ael) ael.play().catch(function () {});
+      }
     };
     window.chenfuOpenStay = openStayOverlay;
     var audio = document.getElementById("audio");
