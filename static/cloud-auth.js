@@ -295,9 +295,43 @@
     return boot;
   }
 
+  function hideUnderlyingPage(on) {
+    var keep = { chenfuLivePlayer: 1, chenfuBootAudio: 1, chenfuBoardLayer: 1 };
+    var kids = document.body ? document.body.children : [];
+    for (var i = 0; i < kids.length; i++) {
+      var el = kids[i];
+      if (keep[el.id]) continue;
+      if (el.tagName === "SCRIPT" || el.tagName === "STYLE") continue;
+      if (on) {
+        el.setAttribute("data-chenfu-under", "1");
+        el.setAttribute("aria-hidden", "true");
+        try {
+          el.inert = true;
+        } catch (e) {}
+      } else if (el.getAttribute("data-chenfu-under") === "1") {
+        el.removeAttribute("data-chenfu-under");
+        el.removeAttribute("aria-hidden");
+        try {
+          el.inert = false;
+        } catch (e2) {}
+      }
+    }
+    var vids = document.querySelectorAll("video");
+    for (var j = 0; j < vids.length; j++) {
+      var v = vids[j];
+      if (v.closest && v.closest("#chenfuLivePlayer")) continue;
+      if (on) {
+        try {
+          v.pause();
+        } catch (e3) {}
+      }
+    }
+  }
+
   function closeLivePlayer(useBack) {
     var layer = document.getElementById("chenfuLivePlayer");
     if (layer) layer.remove();
+    hideUnderlyingPage(false);
     document.documentElement.classList.remove("chenfu-live-player-on");
     if (document.body) document.body.classList.remove("chenfu-live-player-on");
     var boot = window.chenfuBootAudioEl ? window.chenfuBootAudioEl() : document.getElementById("chenfuBootAudio");
@@ -364,8 +398,10 @@
       layer.appendChild(frame);
       document.body.appendChild(layer);
     }
+    document.body.appendChild(layer);
     document.documentElement.classList.add("chenfu-live-player-on");
     if (document.body) document.body.classList.add("chenfu-live-player-on");
+    hideUnderlyingPage(true);
     var iframe = document.getElementById("chenfuLiveFrame");
     var nextSrc = dest;
     if (!samePlayerDest(iframe.getAttribute("src") || "", nextSrc)) iframe.src = nextSrc;

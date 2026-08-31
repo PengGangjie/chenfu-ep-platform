@@ -605,16 +605,27 @@ body.chenfu-embed.hub-page .nav{display:none !important}
 html.chenfu-embed .hub-stage--hero{display:none !important}
 
 .chenfu-live-player{
-  position:fixed;inset:0;z-index:400;background:#07090b;
-  width:100%;height:100%;overflow:hidden;padding:0;
+  position:fixed;inset:0;z-index:2147483000;background:#07090b;
+  width:100%;height:100%;height:100dvh;overflow:hidden;padding:0;
+  isolation:isolate;
 }
 .chenfu-live-player iframe{
   position:absolute;inset:0;display:block;width:100%;height:100%;
-  border:0;background:#07090b;
+  border:0;background:#07090b;color-scheme:dark;
 }
 html.chenfu-live-player-on,
 html.chenfu-live-player-on body{
   overflow:hidden !important;
+  background:#07090b !important;
+}
+html.chenfu-live-player-on [data-chenfu-under]{
+  display:none !important;
+}
+html.chenfu-live-player-on .hub-video,
+html.chenfu-live-player-on .hub-canvas,
+html.chenfu-live-player-on .hub-media{
+  display:none !important;
+  visibility:hidden !important;
 }
 html.chenfu-await-play,
 html.chenfu-await-play body,
