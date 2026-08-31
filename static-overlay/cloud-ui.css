@@ -616,14 +616,6 @@ html.chenfu-live-player-on,
 html.chenfu-live-player-on body{
   overflow:hidden !important;
 }
-html.chenfu-live-player-on body > *:not(#chenfuLivePlayer){
-  visibility:hidden !important;
-  pointer-events:none !important;
-}
-html.chenfu-live-player-on #chenfuLivePlayer{
-  visibility:visible !important;
-  pointer-events:auto !important;
-}
 html.chenfu-await-play,
 html.chenfu-await-play body,
 html.chenfu-await-play body.player-page.player-immersive-mobile{
