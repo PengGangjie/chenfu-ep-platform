@@ -326,6 +326,11 @@ body.board-page{
     width:100%;
     touch-action:none;
   }
+  body.player-page.player-immersive-mobile .nav,
+  body.player-page.player-immersive-mobile .nav a,
+  body.player-page.player-immersive-mobile .floating-dock,
+  body.player-page.player-immersive-mobile .floating-dock a,
+  body.player-page.player-immersive-mobile .transport,
   body.player-page.player-immersive-mobile .chenfu-board-layer,
   body.player-page.player-immersive-mobile .chenfu-nowplay,
   body.player-page.player-immersive-mobile .chenfu-nowplay-back,
@@ -606,8 +611,9 @@ html.chenfu-embed .hub-stage--hero{display:none !important}
 
 .chenfu-live-player{
   position:fixed;inset:0;z-index:2147483000;background:#07090b;
-  width:100%;height:100%;height:100dvh;overflow:hidden;padding:0;
+  width:100%;height:100%;overflow:hidden;padding:0;
   isolation:isolate;
+  overscroll-behavior:none;
 }
 .chenfu-live-player iframe{
   position:absolute;inset:0;display:block;width:100%;height:100%;

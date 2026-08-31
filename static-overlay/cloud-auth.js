@@ -295,6 +295,52 @@
     return boot;
   }
 
+  var vvBound = false;
+  function pinLivePlayerToVisualViewport() {
+    var layer = document.getElementById("chenfuLivePlayer");
+    if (!layer) return;
+    var vv = window.visualViewport;
+    if (!vv) return;
+    layer.style.top = vv.offsetTop + "px";
+    layer.style.left = vv.offsetLeft + "px";
+    layer.style.width = vv.width + "px";
+    layer.style.height = vv.height + "px";
+    layer.style.right = "auto";
+    layer.style.bottom = "auto";
+  }
+  function pinSoon() {
+    pinLivePlayerToVisualViewport();
+    requestAnimationFrame(pinLivePlayerToVisualViewport);
+    setTimeout(pinLivePlayerToVisualViewport, 80);
+    setTimeout(pinLivePlayerToVisualViewport, 320);
+  }
+  function onVisualViewportChange() {
+    pinSoon();
+  }
+  function bindVisualViewport(on) {
+    var vv = window.visualViewport;
+    if (on) {
+      pinSoon();
+      if (!vvBound) {
+        if (vv) {
+          vv.addEventListener("resize", onVisualViewportChange);
+          vv.addEventListener("scroll", onVisualViewportChange);
+        }
+        window.addEventListener("resize", onVisualViewportChange);
+        window.addEventListener("orientationchange", onVisualViewportChange);
+        vvBound = true;
+      }
+    } else if (vvBound) {
+      if (vv) {
+        vv.removeEventListener("resize", onVisualViewportChange);
+        vv.removeEventListener("scroll", onVisualViewportChange);
+      }
+      window.removeEventListener("resize", onVisualViewportChange);
+      window.removeEventListener("orientationchange", onVisualViewportChange);
+      vvBound = false;
+    }
+  }
+
   function hideUnderlyingPage(on) {
     var keep = { chenfuLivePlayer: 1, chenfuBootAudio: 1, chenfuBoardLayer: 1 };
     var kids = document.body ? document.body.children : [];
@@ -331,6 +377,7 @@
   function closeLivePlayer(useBack) {
     var layer = document.getElementById("chenfuLivePlayer");
     if (layer) layer.remove();
+    bindVisualViewport(false);
     hideUnderlyingPage(false);
     document.documentElement.classList.remove("chenfu-live-player-on");
     if (document.body) document.body.classList.remove("chenfu-live-player-on");
@@ -402,6 +449,7 @@
     document.documentElement.classList.add("chenfu-live-player-on");
     if (document.body) document.body.classList.add("chenfu-live-player-on");
     hideUnderlyingPage(true);
+    bindVisualViewport(true);
     var iframe = document.getElementById("chenfuLiveFrame");
     var nextSrc = dest;
     if (!samePlayerDest(iframe.getAttribute("src") || "", nextSrc)) iframe.src = nextSrc;
