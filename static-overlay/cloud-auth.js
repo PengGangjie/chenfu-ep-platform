@@ -460,8 +460,11 @@
 
   try {
     if (window.parent !== window) {
-      document.documentElement.classList.add("chenfu-embed");
-      if (document.body) document.body.classList.add("chenfu-embed");
+      var isLivePlayer = /player\.html/i.test(location.pathname || "");
+      if (!isLivePlayer) {
+        document.documentElement.classList.add("chenfu-embed");
+        if (document.body) document.body.classList.add("chenfu-embed");
+      }
       document.addEventListener(
         "click",
         function (ev) {
