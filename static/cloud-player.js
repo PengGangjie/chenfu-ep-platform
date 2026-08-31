@@ -281,6 +281,9 @@
   function goToPlayer(url) {
     if (advancing) return;
     advancing = true;
+    setTimeout(function () {
+      advancing = false;
+    }, 2000);
     try {
       sessionStorage.setItem("chenfu_autoplay", "1");
       sessionStorage.setItem("chenfu_shuffle", shuffleMode ? "1" : "0");
@@ -292,12 +295,10 @@
     }
     if (window.parent !== window && window.parent.chenfuOpenPlayer) {
       window.parent.chenfuOpenPlayer(dest);
-      advancing = false;
       return;
     }
     if (window.chenfuOpenPlayer) {
       window.chenfuOpenPlayer(dest);
-      advancing = false;
       return;
     }
     window.location.href = encodeURI(dest);
@@ -325,13 +326,24 @@
   }
 
   function onTrackEnded() {
+    if (advancing) return;
     if (loopOne) {
-      var audio = document.getElementById("audio");
       resetPlaySession();
-      if (audio) {
-        audio.currentTime = 0;
-        audio.play().catch(function () {});
+      var el = parentBoot() || document.getElementById("audio");
+      if (el) {
+        try {
+          el.currentTime = 0;
+        } catch (e) {}
+        el.play().catch(function () {});
       }
+      return;
+    }
+    if (window.parent !== window && window.parent.chenfuAdvanceAlbum) {
+      window.parent.chenfuAdvanceAlbum();
+      return;
+    }
+    if (window.chenfuAdvanceAlbum) {
+      window.chenfuAdvanceAlbum();
       return;
     }
     playNextTrack();
@@ -351,21 +363,25 @@
   function hookParentBoot(audio) {
     var boot = parentBoot();
     if (!boot || !audio) return false;
+    audio.dataset.chenfuHooked = "1";
     audio.setAttribute("playsinline", "");
     audio.setAttribute("webkit-playsinline", "");
     audio.muted = true;
     try {
       audio.pause();
     } catch (e) {}
+    window.__chenfuHookedAudio = audio;
     function emit(name) {
+      var target = window.__chenfuHookedAudio || audio;
       try {
-        audio.dispatchEvent(new Event(name));
+        target.dispatchEvent(new Event(name));
       } catch (e2) {}
     }
     function pull() {
       try {
-        if (Math.abs((audio.currentTime || 0) - boot.currentTime) > 0.18) {
-          audio.currentTime = boot.currentTime;
+        var target = window.__chenfuHookedAudio || audio;
+        if (Math.abs((target.currentTime || 0) - boot.currentTime) > 0.18) {
+          target.currentTime = boot.currentTime;
         }
       } catch (e3) {}
       requestAnimationFrame(pull);
@@ -377,15 +393,18 @@
     audio.pause = function () {
       boot.pause();
     };
-    boot.addEventListener("play", function () {
-      emit("play");
-    });
-    boot.addEventListener("pause", function () {
-      emit("pause");
-    });
-    boot.addEventListener("ended", function () {
-      emit("ended");
-    });
+    if (!boot.dataset.chenfuHookForward) {
+      boot.dataset.chenfuHookForward = "1";
+      boot.addEventListener("play", function () {
+        emit("play");
+      });
+      boot.addEventListener("pause", function () {
+        emit("pause");
+      });
+      boot.addEventListener("ended", function () {
+        emit("ended");
+      });
+    }
     audio.addEventListener("seeked", function () {
       try {
         boot.currentTime = audio.currentTime;
@@ -466,6 +485,13 @@
     } catch (e) {}
     var audio = document.getElementById("audio");
     if (audio) audio.loop = !!on;
+    var boot = parentBoot();
+    if (!boot) {
+      try {
+        if (window.chenfuBootAudioEl) boot = window.chenfuBootAudioEl();
+      } catch (e2) {}
+    }
+    if (boot) boot.loop = !!on;
     var btn = document.getElementById("btnLoop");
     if (!btn) return;
     btn.classList.toggle("is-on", loopOne);
@@ -1205,6 +1231,7 @@
       maxRatio = Math.max(maxRatio, currentRatio(audio));
       followPlayingLyric();
       if (
+        !audio.dataset.chenfuHooked &&
         !loopOne &&
         !audio.loop &&
         !advancing &&

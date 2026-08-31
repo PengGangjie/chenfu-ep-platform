@@ -132,29 +132,120 @@
     }
   }
 
-  function mp3ForPlayer(href) {
-    var path = playerPath(href);
-    var map = [
-      ["饵_ep", "/《饵》/饵_ep/assets/audio/饵_v34_A.mp3"],
-      ["鲨鱼_EP_5.1", "/《鲨鱼》/鲨鱼_EP_5.1/assets/audio/鲨鱼_5.1_Cover_A_t12.mp3"],
-      ["潜水艇_ep", "/《潜水艇》/潜水艇_ep/assets/audio/潜水艇3.0_A.mp3"],
-      ["火山群岛_ep", "/《火山群岛》/火山群岛_ep/assets/audio/火山群岛_v2fresh_A.mp3"]
+  function ALBUM() {
+    return [
+      { id: "bait", key: "饵_ep", player: "/《饵》/饵_ep/player.html", mp3: "/《饵》/饵_ep/assets/audio/饵_v34_A.mp3" },
+      { id: "shark", key: "鲨鱼_EP_5.1", player: "/《鲨鱼》/鲨鱼_EP_5.1/player.html", mp3: "/《鲨鱼》/鲨鱼_EP_5.1/assets/audio/鲨鱼_5.1_Cover_A_t12.mp3" },
+      { id: "sub", key: "潜水艇_ep", player: "/《潜水艇》/潜水艇_ep/player.html", mp3: "/《潜水艇》/潜水艇_ep/assets/audio/潜水艇3.0_A.mp3" },
+      { id: "volcano", key: "火山群岛_ep", player: "/《火山群岛》/火山群岛_ep/player.html", mp3: "/《火山群岛》/火山群岛_ep/assets/audio/火山群岛_v2fresh_A.mp3" }
     ];
-    for (var i = 0; i < map.length; i++) {
-      if (path.indexOf(map[i][0]) >= 0) {
-        try {
-          return encodeURI(map[i][1]);
-        } catch (e) {
-          return map[i][1];
-        }
-      }
+  }
+
+  function albumIndexFromText(text) {
+    var raw = String(text || "");
+    try {
+      raw = decodeURIComponent(raw);
+    } catch (e) {}
+    var list = ALBUM();
+    for (var i = 0; i < list.length; i++) {
+      if (raw.indexOf(list[i].key) >= 0 || raw.indexOf(list[i].mp3) >= 0) return i;
     }
-    return "";
+    return -1;
+  }
+
+  function mp3ForPlayer(href) {
+    var idx = albumIndexFromText(playerPath(href) + " " + href);
+    if (idx < 0) return "";
+    var mp3 = ALBUM()[idx].mp3;
+    try {
+      return encodeURI(mp3);
+    } catch (e) {
+      return mp3;
+    }
+  }
+
+  var lastAdvanceAt = 0;
+
+  function albumMode() {
+    var loopOne = false;
+    var shuffle = false;
+    try {
+      loopOne = sessionStorage.getItem("chenfu_loop_one") === "1";
+      shuffle = sessionStorage.getItem("chenfu_shuffle") === "1";
+    } catch (e) {}
+    if (loopOne) shuffle = false;
+    return { loopOne: loopOne, shuffle: shuffle };
+  }
+
+  function currentAlbumHref() {
+    var iframe = document.getElementById("chenfuLiveFrame");
+    if (iframe && iframe.getAttribute("src")) return iframe.getAttribute("src");
+    if (iframe && iframe.src) return iframe.src;
+    return location.href;
+  }
+
+  function nextAlbumPlayer(fromHref) {
+    var list = ALBUM();
+    var mode = albumMode();
+    var idx = albumIndexFromText(fromHref || currentAlbumHref());
+    var boot = window.__chenfuBootAudio || document.getElementById("chenfuBootAudio") || document.getElementById("audio");
+    if (idx < 0 && boot) idx = albumIndexFromText(boot.currentSrc || boot.src || "");
+    if (idx < 0) idx = 0;
+    if (mode.shuffle && list.length > 1) {
+      var pick = idx;
+      var guard = 0;
+      while (pick === idx && guard < 8) {
+        pick = Math.floor(Math.random() * list.length);
+        guard += 1;
+      }
+      return list[pick].player;
+    }
+    return list[(idx + 1) % list.length].player;
+  }
+
+  function chenfuAdvanceAlbum() {
+    if (Date.now() - lastAdvanceAt < 1200) return;
+    lastAdvanceAt = Date.now();
+    var boot = ensureBootAudio();
+    var mode = albumMode();
+    if (mode.loopOne) {
+      try {
+        boot.currentTime = 0;
+      } catch (e) {}
+      boot.play().catch(function () {});
+      lastAdvanceAt = 0;
+      return;
+    }
+    openPlayerInPlace(nextAlbumPlayer());
+  }
+
+  window.chenfuAdvanceAlbum = chenfuAdvanceAlbum;
+
+  function bindAlbumLoop(boot) {
+    if (!boot || boot.dataset.chenfuAlbumBound) return;
+    boot.dataset.chenfuAlbumBound = "1";
+    boot.addEventListener("ended", function () {
+      chenfuAdvanceAlbum();
+    });
   }
 
   function ensureBootAudio() {
     var boot = document.getElementById("chenfuBootAudio");
-    if (boot) return boot;
+    if (boot) {
+      window.__chenfuBootAudio = boot;
+      bindAlbumLoop(boot);
+      return boot;
+    }
+    if (window.__chenfuBootAudio && window.__chenfuBootAudio.isConnected) {
+      bindAlbumLoop(window.__chenfuBootAudio);
+      return window.__chenfuBootAudio;
+    }
+    var local = document.getElementById("audio");
+    if (local && window.parent === window) {
+      window.__chenfuBootAudio = local;
+      bindAlbumLoop(local);
+      return local;
+    }
     boot = document.createElement("audio");
     boot.id = "chenfuBootAudio";
     boot.setAttribute("playsinline", "");
@@ -162,7 +253,17 @@
     boot.setAttribute("preload", "auto");
     boot.style.display = "none";
     document.body.appendChild(boot);
+    window.__chenfuBootAudio = boot;
+    bindAlbumLoop(boot);
     return boot;
+  }
+
+  function bootFileName(u) {
+    try {
+      return decodeURIComponent(String(u || "").split("?")[0].split("/").pop() || "");
+    } catch (e) {
+      return String(u || "");
+    }
   }
 
   function playBootFor(href) {
@@ -172,9 +273,13 @@
     boot.setAttribute("playsinline", "");
     boot.setAttribute("webkit-playsinline", "");
     try {
-      var abs = new URL(src, location.origin).href;
-      if (boot.src !== abs) boot.src = src;
+      boot.loop = sessionStorage.getItem("chenfu_loop_one") === "1";
     } catch (e) {
+      boot.loop = false;
+    }
+    var want = bootFileName(src);
+    var have = bootFileName(boot.currentSrc || boot.src);
+    if (!have || (want && have !== want)) {
       boot.src = src;
     }
     var p = boot.play();
@@ -187,7 +292,7 @@
     if (layer) layer.remove();
     document.documentElement.classList.remove("chenfu-live-player-on");
     if (document.body) document.body.classList.remove("chenfu-live-player-on");
-    var boot = document.getElementById("chenfuBootAudio");
+    var boot = window.chenfuBootAudioEl ? window.chenfuBootAudioEl() : document.getElementById("chenfuBootAudio");
     if (boot && !boot.paused) boot.pause();
     if (useBack) {
       try {
@@ -247,7 +352,11 @@
   window.chenfuOpenPlayer = openPlayerInPlace;
   window.chenfuCloseLivePlayer = closeLivePlayer;
   window.chenfuBootAudioEl = function () {
-    return document.getElementById("chenfuBootAudio");
+    return (
+      document.getElementById("chenfuBootAudio") ||
+      window.__chenfuBootAudio ||
+      document.getElementById("audio")
+    );
   };
 
   window.addEventListener("popstate", function () {
