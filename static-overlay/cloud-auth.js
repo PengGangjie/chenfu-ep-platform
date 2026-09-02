@@ -581,6 +581,8 @@
       document.addEventListener(
         "click",
         function (ev) {
+          // 歌词卡 live iframe：留言板导航由 cloud-player / cloud-board 处理，勿劫持到 parent
+          if (isLivePlayer) return;
           var a = ev.target && ev.target.closest ? ev.target.closest("a") : null;
           if (!a) return;
           var href = a.getAttribute("href") || "";

@@ -654,14 +654,18 @@
     document.querySelectorAll(".board-nav a[data-song], .board-nav a[data-section]").forEach(function (a) {
       if (a.dataset.navBound) return;
       a.dataset.navBound = "1";
-      a.addEventListener("click", function (ev) {
-        ev.preventDefault();
-        if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
-        ev.stopPropagation();
-        var sec = a.getAttribute("data-section") || "";
-        if (sec === "dev") setView("", "dev");
-        else setView(a.getAttribute("data-song") || "", "");
-      });
+      a.addEventListener(
+        "click",
+        function (ev) {
+          ev.preventDefault();
+          if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+          ev.stopPropagation();
+          var sec = a.getAttribute("data-section") || "";
+          if (sec === "dev") setView("", "dev");
+          else setView(a.getAttribute("data-song") || "", "");
+        },
+        true
+      );
     });
   }
 

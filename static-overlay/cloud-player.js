@@ -1138,6 +1138,11 @@
           if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
           ev.stopPropagation();
           if (window.chenfuOnBoardPlayer) window.chenfuOnBoardPlayer(href);
+          return;
+        }
+        // 导航仓 / 留言板链接交给 cloud-board.bindNav，禁止把 iframe 整页跳到 board.html
+        if (t.closest(".board-nav") || rawHref.indexOf("board") >= 0 || a.getAttribute("data-song") != null) {
+          return;
         }
         return;
       }
