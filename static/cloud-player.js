@@ -524,10 +524,12 @@
         ".chenfu-seekbar .track::before{content:'';position:absolute;left:0;right:0;top:50%;height:4px;margin-top:-2px;" +
           "border-radius:2px;background:rgba(255,255,255,.25)}" +
         ".chenfu-seekbar .fill{position:absolute;left:0;top:50%;height:4px;margin-top:-2px;width:0;border-radius:2px;" +
-          "background:linear-gradient(90deg,#c41e3a,#ff8a96)}" +
+          "background:linear-gradient(90deg,#c41e3a,#ff8a96);transition:width .3s linear}" +
         ".chenfu-seekbar .knob{position:absolute;top:50%;left:0;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;" +
-          "background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.5);transform:scale(.72);transition:transform .15s ease}" +
-        ".chenfu-seekbar.is-drag .knob{transform:scale(1)}" +
+          "background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.5);transform:scale(.72);" +
+          "transition:left .3s linear,transform .15s ease}" +
+        ".chenfu-seekbar.is-drag .knob{transform:scale(1);transition:transform .15s ease}" +
+        ".chenfu-seekbar.is-drag .fill{transition:none}" +
         ".chenfu-seekbar .fill,.chenfu-seekbar .knob{pointer-events:none}" +
         "body.player-page.player-immersive-mobile .chenfu-seekbar .track{height:44px}";
       document.head.appendChild(st);
@@ -603,6 +605,7 @@
     track.addEventListener("pointercancel", function () {
       dragging = false;
       bar.classList.remove("is-drag");
+      refresh();
     });
     bar.addEventListener("keydown", function (ev) {
       var d = duration();
@@ -616,19 +619,23 @@
       } catch (e2) {}
       paint(t / d, t);
     });
-    (function tick() {
+    function refresh() {
       var d = duration();
-      if (d > 0) {
-        durEl.textContent = fmt(d);
-        if (!dragging) {
-          var t = audio.currentTime || 0;
-          paint(t / d, t);
-          bar.setAttribute("aria-valuemax", String(Math.round(d)));
-          bar.setAttribute("aria-valuenow", String(Math.round(t)));
-        }
-      }
-      requestAnimationFrame(tick);
-    })();
+      if (d <= 0) return;
+      durEl.textContent = fmt(d);
+      bar.setAttribute("aria-valuemax", String(Math.round(d)));
+      if (dragging) return;
+      var t = audio.currentTime || 0;
+      paint(t / d, t);
+      bar.setAttribute("aria-valuenow", String(Math.round(t)));
+    }
+    // live-player iframe 里 rAF 会被节流到停（歌词靠 timeupdate 仍在走），
+    // 进度更新也走 timeupdate(约 4Hz) + CSS transition 平滑，另加低频 interval 兜底。
+    audio.addEventListener("timeupdate", refresh);
+    audio.addEventListener("durationchange", refresh);
+    audio.addEventListener("playing", refresh);
+    setInterval(refresh, 800);
+    refresh();
   }
 
   function tryAutoplayOnEnter() {
