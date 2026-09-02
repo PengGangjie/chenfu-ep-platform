@@ -9,15 +9,17 @@
   if (opts.section) params.set("section", opts.section);
   var song = params.get("song") || "";
   var sectionRaw = params.get("section");
-  var section = sectionRaw !== null ? sectionRaw : song ? "" : "dev";
+  // 无参默认总览（四曲留言汇总）；写给开发者须显式 section=dev
+  var section = sectionRaw !== null ? sectionRaw : "";
   var embed = opts.embed === true || params.get("embed") === "1";
   if (embed) {
     root.classList.add("board-embed");
   }
-  if (sectionRaw === null && !song && section === "dev" && !embed) {
+  if (sectionRaw === null && !song && !embed) {
     var initUrl = new URL(location.href);
-    initUrl.searchParams.set("section", "dev");
-    history.replaceState({}, "", initUrl);
+    initUrl.searchParams.delete("section");
+    initUrl.searchParams.delete("song");
+    history.replaceState({}, "", initUrl.pathname + (initUrl.search || "") + initUrl.hash);
   }
 
   var boardData = null;
@@ -134,7 +136,7 @@
           var on = isDev ? section === "dev" : !section && (s.id || "") === (song || "");
           var rank = s.num ? '<span class="rank-dot">' + s.num + "</span>" : "";
           return (
-            '<a href="#" data-song="' +
+            '<a href="/board.html" data-song="' +
             esc(isDev ? "" : s.id || "") +
             '" data-section="' +
             (isDev ? "dev" : "") +
@@ -650,8 +652,12 @@
 
   function bindNav() {
     document.querySelectorAll(".board-nav a[data-song], .board-nav a[data-section]").forEach(function (a) {
+      if (a.dataset.navBound) return;
+      a.dataset.navBound = "1";
       a.addEventListener("click", function (ev) {
         ev.preventDefault();
+        if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+        ev.stopPropagation();
         var sec = a.getAttribute("data-section") || "";
         if (sec === "dev") setView("", "dev");
         else setView(a.getAttribute("data-song") || "", "");

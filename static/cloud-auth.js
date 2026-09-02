@@ -584,7 +584,8 @@
           var a = ev.target && ev.target.closest ? ev.target.closest("a") : null;
           if (!a) return;
           var href = a.getAttribute("href") || "";
-          if (href.indexOf("player.html") >= 0 || (a.href && a.href.indexOf("player.html") >= 0)) {
+          // 只用属性值判断意图；a.href 会把 "#" 解析成当前页（含 player.html）
+          if (href.indexOf("player.html") >= 0) {
             ev.preventDefault();
             if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
             if (window.parent.chenfuOpenPlayer) window.parent.chenfuOpenPlayer(a.href);

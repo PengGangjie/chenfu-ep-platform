@@ -859,12 +859,12 @@
       var u = new URL(href, location.origin);
       if (u.pathname.indexOf("board") < 0) u = new URL("/board.html", location.origin);
       u.searchParams.delete("embed");
-      if (!u.searchParams.get("section") && !u.searchParams.get("song")) {
-        u.searchParams.set("section", "dev");
-      }
-      return u.search || "?section=dev";
+      // 播放中留言板默认进总览（四曲汇总）；仅显式带 song / section 时才过滤
+      u.searchParams.delete("chenfu_embed");
+      var q = u.searchParams.toString();
+      return q ? "?" + q : "";
     } catch (e) {
-      return "?section=dev";
+      return "";
     }
   }
 
@@ -1010,7 +1010,7 @@
     paintNowPlay();
     showStayPane(kind);
     if (kind === "board") {
-      var search = boardSrcFromHref(href || "/board.html?section=dev");
+      var search = boardSrcFromHref(href || "/board.html");
       loadBoardScript(function () {
         mountBoardIntoOverlay(search);
         paintNowPlay();
@@ -1129,9 +1129,11 @@
       var a = t && t.closest ? t.closest("a") : null;
       if (!a) return;
       var href = a.href || a.getAttribute("href") || "";
+      var rawHref = a.getAttribute("href") || "";
       var inLayer = t && t.closest && t.closest("#chenfuBoardLayer");
       if (inLayer) {
-        if (href.indexOf("player.html") >= 0) {
+        // 勿用 a.href：导航仓 href="#" 会解析成当前 player.html#，误判为切歌
+        if (rawHref.indexOf("player.html") >= 0) {
           ev.preventDefault();
           if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
           ev.stopPropagation();
@@ -1162,7 +1164,7 @@
     var a = document.createElement("a");
     a.className = "shark-seg__item";
     a.setAttribute("data-cloud-board", "1");
-    a.href = "/board.html?song=" + encodeURIComponent(songId);
+    a.href = "/board.html";
     a.textContent = "留言板";
     dock.appendChild(a);
   }
