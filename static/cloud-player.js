@@ -505,6 +505,132 @@
     return true;
   }
 
+  // hooked 代理下，原生 controls 读的是本地静音引擎（停在 0、拖动不动真声），
+  // JS 属性代理只对脚本可见、对 UA 控件无效，所以换成直连真声的自定义进度条。
+  function installProxySeekbar(audio) {
+    if (!audio || audio.dataset.chenfuSeekbar) return;
+    audio.dataset.chenfuSeekbar = "1";
+    audio.removeAttribute("controls");
+    audio.style.display = "none";
+    if (!document.getElementById("chenfuSeekbarStyle")) {
+      var st = document.createElement("style");
+      st.id = "chenfuSeekbarStyle";
+      st.textContent =
+        ".chenfu-seekbar{display:flex;align-items:center;gap:10px;width:100%;min-height:34px;" +
+          "font-size:12px;font-variant-numeric:tabular-nums;color:rgba(255,255,255,.9);letter-spacing:.02em;" +
+          "-webkit-tap-highlight-color:transparent}" +
+        ".chenfu-seekbar .t{flex:0 0 auto;min-width:36px;text-align:center;text-shadow:0 1px 6px rgba(0,0,0,.5)}" +
+        ".chenfu-seekbar .track{position:relative;flex:1 1 auto;min-width:0;height:34px;cursor:pointer;touch-action:none}" +
+        ".chenfu-seekbar .track::before{content:'';position:absolute;left:0;right:0;top:50%;height:4px;margin-top:-2px;" +
+          "border-radius:2px;background:rgba(255,255,255,.25)}" +
+        ".chenfu-seekbar .fill{position:absolute;left:0;top:50%;height:4px;margin-top:-2px;width:0;border-radius:2px;" +
+          "background:linear-gradient(90deg,#c41e3a,#ff8a96)}" +
+        ".chenfu-seekbar .knob{position:absolute;top:50%;left:0;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;" +
+          "background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.5);transform:scale(.72);transition:transform .15s ease}" +
+        ".chenfu-seekbar.is-drag .knob{transform:scale(1)}" +
+        ".chenfu-seekbar .fill,.chenfu-seekbar .knob{pointer-events:none}" +
+        "body.player-page.player-immersive-mobile .chenfu-seekbar .track{height:44px}";
+      document.head.appendChild(st);
+    }
+    var bar = document.createElement("div");
+    bar.className = "chenfu-seekbar";
+    bar.setAttribute("role", "slider");
+    bar.setAttribute("aria-label", "播放进度");
+    bar.setAttribute("aria-valuemin", "0");
+    bar.tabIndex = 0;
+    bar.innerHTML =
+      '<span class="t cur">0:00</span>' +
+      '<div class="track"><div class="fill"></div><div class="knob"></div></div>' +
+      '<span class="t dur">--:--</span>';
+    audio.insertAdjacentElement("afterend", bar);
+    var track = bar.querySelector(".track");
+    var fill = bar.querySelector(".fill");
+    var knob = bar.querySelector(".knob");
+    var curEl = bar.querySelector(".cur");
+    var durEl = bar.querySelector(".dur");
+    var dragging = false;
+
+    function duration() {
+      var d = audio.duration;
+      return isFinite(d) && d > 0 ? d : 0;
+    }
+    function fmt(s) {
+      s = Math.max(0, Math.round(s || 0));
+      var m = Math.floor(s / 60);
+      var sec = s % 60;
+      return m + ":" + (sec < 10 ? "0" : "") + sec;
+    }
+    function paint(ratio, t) {
+      var pct = Math.max(0, Math.min(1, ratio || 0)) * 100 + "%";
+      fill.style.width = pct;
+      knob.style.left = pct;
+      if (t != null) curEl.textContent = fmt(t);
+    }
+    function ratioFromEvent(ev) {
+      var r = track.getBoundingClientRect();
+      if (r.width <= 0) return 0;
+      return Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width));
+    }
+    track.addEventListener("pointerdown", function (ev) {
+      if (duration() <= 0) return;
+      dragging = true;
+      bar.classList.add("is-drag");
+      try {
+        track.setPointerCapture(ev.pointerId);
+      } catch (e0) {}
+      var ratio = ratioFromEvent(ev);
+      paint(ratio, ratio * duration());
+      ev.preventDefault();
+    });
+    track.addEventListener("pointermove", function (ev) {
+      if (!dragging) return;
+      var ratio = ratioFromEvent(ev);
+      paint(ratio, ratio * duration());
+    });
+    function endDrag(ev) {
+      if (!dragging) return;
+      dragging = false;
+      bar.classList.remove("is-drag");
+      var d = duration();
+      if (d <= 0) return;
+      var ratio = ratioFromEvent(ev);
+      try {
+        audio.currentTime = ratio * d;
+      } catch (e1) {}
+      paint(ratio, ratio * d);
+    }
+    track.addEventListener("pointerup", endDrag);
+    track.addEventListener("pointercancel", function () {
+      dragging = false;
+      bar.classList.remove("is-drag");
+    });
+    bar.addEventListener("keydown", function (ev) {
+      var d = duration();
+      if (d <= 0) return;
+      if (ev.key !== "ArrowLeft" && ev.key !== "ArrowRight") return;
+      ev.preventDefault();
+      var step = ev.shiftKey ? 30 : 5;
+      var t = Math.max(0, Math.min(d, (audio.currentTime || 0) + (ev.key === "ArrowRight" ? step : -step)));
+      try {
+        audio.currentTime = t;
+      } catch (e2) {}
+      paint(t / d, t);
+    });
+    (function tick() {
+      var d = duration();
+      if (d > 0) {
+        durEl.textContent = fmt(d);
+        if (!dragging) {
+          var t = audio.currentTime || 0;
+          paint(t / d, t);
+          bar.setAttribute("aria-valuemax", String(Math.round(d)));
+          bar.setAttribute("aria-valuenow", String(Math.round(t)));
+        }
+      }
+      requestAnimationFrame(tick);
+    })();
+  }
+
   function tryAutoplayOnEnter() {
     var audio = document.getElementById("audio");
     if (!audio) return;
@@ -515,6 +641,7 @@
     audio.setAttribute("webkit-playsinline", "");
     var started = false;
     var hooked = hookParentBoot(audio);
+    if (hooked) installProxySeekbar(audio);
     function clearFlag() {
       try {
         sessionStorage.removeItem("chenfu_autoplay");
