@@ -363,53 +363,144 @@
   function hookParentBoot(audio) {
     var boot = parentBoot();
     if (!boot || !audio) return false;
+    window.__chenfuHookedAudio = audio;
+    if (audio.dataset.chenfuHooked === "1") {
+      if (!boot.paused) {
+        try {
+          audio.dispatchEvent(new Event("play"));
+        } catch (e0) {}
+      }
+      return true;
+    }
     audio.dataset.chenfuHooked = "1";
     audio.setAttribute("playsinline", "");
     audio.setAttribute("webkit-playsinline", "");
     audio.muted = true;
+    audio.volume = 0;
+    var nativePause = HTMLMediaElement.prototype.pause.bind(audio);
     try {
-      audio.pause();
+      nativePause();
     } catch (e) {}
-    window.__chenfuHookedAudio = audio;
+
     function emit(name) {
       var target = window.__chenfuHookedAudio || audio;
       try {
         target.dispatchEvent(new Event(name));
       } catch (e2) {}
     }
-    function pull() {
+
+    function redefine(prop, desc) {
       try {
-        var target = window.__chenfuHookedAudio || audio;
-        if (Math.abs((target.currentTime || 0) - boot.currentTime) > 0.18) {
-          target.currentTime = boot.currentTime;
-        }
-      } catch (e3) {}
-      requestAnimationFrame(pull);
+        Object.defineProperty(audio, prop, desc);
+        return true;
+      } catch (e3) {
+        return false;
+      }
     }
-    pull();
+
+    // 真声在父页 boot；本地 #audio 只做 UI/歌词时钟。必须代理 paused/currentTime，
+    // 否则 btnPlay 永远读到 paused=true（点了只会 play、不会 pause），歌词 rAF 也卡在 0。
+    var pausedOk = redefine("paused", {
+      configurable: true,
+      enumerable: true,
+      get: function () {
+        return boot.paused;
+      }
+    });
+    redefine("ended", {
+      configurable: true,
+      enumerable: true,
+      get: function () {
+        return boot.ended;
+      }
+    });
+    redefine("duration", {
+      configurable: true,
+      enumerable: true,
+      get: function () {
+        var d = boot.duration;
+        return isFinite(d) && d > 0 ? d : NaN;
+      }
+    });
+    var timeOk = redefine("currentTime", {
+      configurable: true,
+      enumerable: true,
+      get: function () {
+        return boot.currentTime || 0;
+      },
+      set: function (v) {
+        try {
+          boot.currentTime = v;
+        } catch (e4) {}
+      }
+    });
+    audio.fastSeek = function (t) {
+      try {
+        if (typeof boot.fastSeek === "function") boot.fastSeek(t);
+        else boot.currentTime = t;
+      } catch (e5) {
+        try {
+          boot.currentTime = t;
+        } catch (e6) {}
+      }
+    };
+
+    if (!timeOk) {
+      function pull() {
+        try {
+          var target = window.__chenfuHookedAudio || audio;
+          if (Math.abs((target.currentTime || 0) - (boot.currentTime || 0)) > 0.12) {
+            target.currentTime = boot.currentTime || 0;
+          }
+        } catch (e7) {}
+        requestAnimationFrame(pull);
+      }
+      pull();
+    }
+
     audio.play = function () {
-      return boot.play();
+      var p = boot.play();
+      if (!pausedOk) {
+        try {
+          HTMLMediaElement.prototype.play.call(audio).catch(function () {});
+        } catch (e8) {}
+      }
+      return p && p.catch ? p : Promise.resolve();
     };
     audio.pause = function () {
       boot.pause();
+      if (!pausedOk) {
+        try {
+          nativePause();
+        } catch (e9) {}
+      }
     };
+
     if (!boot.dataset.chenfuHookForward) {
       boot.dataset.chenfuHookForward = "1";
       boot.addEventListener("play", function () {
+        if (!pausedOk) {
+          try {
+            HTMLMediaElement.prototype.play.call(window.__chenfuHookedAudio || audio).catch(function () {});
+          } catch (e10) {}
+        }
         emit("play");
       });
       boot.addEventListener("pause", function () {
+        if (!pausedOk) {
+          try {
+            HTMLMediaElement.prototype.pause.call(window.__chenfuHookedAudio || audio);
+          } catch (e11) {}
+        }
         emit("pause");
       });
       boot.addEventListener("ended", function () {
         emit("ended");
       });
+      boot.addEventListener("timeupdate", function () {
+        emit("timeupdate");
+      });
     }
-    audio.addEventListener("seeked", function () {
-      try {
-        boot.currentTime = audio.currentTime;
-      } catch (e4) {}
-    });
     if (!boot.paused) emit("play");
     return true;
   }
